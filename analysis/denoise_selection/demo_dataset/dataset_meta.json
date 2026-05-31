@@ -1,0 +1,7 @@
+{
+  "source_clean": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav",
+  "num_clips": 160,
+  "clip_seconds": 2.0,
+  "sample_rate": 16000,
+  "output_dir": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\demo_dataset\\clean"
+}

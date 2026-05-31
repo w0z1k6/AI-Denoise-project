@@ -1,0 +1,11 @@
+[
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene09_chirp_interference_snr8.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene09_chirp_interference_snr8_routed.wav",
+    "route_name": "override_chirp_notch",
+    "chain": [
+      "chirp_notch"
+    ],
+    "reason": "scene override from config"
+  }
+]

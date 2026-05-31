@@ -1,0 +1,17 @@
+{
+  "scene01_white_snr15.wav": "nmf_denoise",
+  "scene02_white_snr5.wav": "nmf_denoise",
+  "scene03_pink_snr10.wav": "base_omlsa_mcra",
+  "scene04_brown_snr8.wav": "subspace_denoise",
+  "scene05_hum50_snr12.wav": "subspace_denoise",
+  "scene06_hum60_snr12.wav": "nmf_denoise",
+  "scene07_highfreq_hiss_snr10.wav": "wpe_omlsa",
+  "scene08_lowfreq_rumble_snr10.wav": "subspace_denoise",
+  "scene09_chirp_interference_snr8.wav": "chirp_notch",
+  "scene10_impulsive_clicks_snr9.wav": "nmf_denoise",
+  "scene11_intermittent_bursts_snr7.wav": "kalman_ar",
+  "scene12_babble_like_snr5.wav": "wpe_omlsa",
+  "scene13_street_combo_snr6.wav": "subspace_denoise",
+  "scene14_office_fan_snr9.wav": "nmf_denoise",
+  "scene15_reverb_plus_hiss_snr10.wav": "wpe_omlsa"
+}

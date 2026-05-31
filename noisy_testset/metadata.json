@@ -1,0 +1,137 @@
+[
+  {
+    "file": "scene01_white_snr15.wav",
+    "noise_type": "white",
+    "snr_target_db": 15.0,
+    "snr_actual_db": 15.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene02_white_snr5.wav",
+    "noise_type": "white",
+    "snr_target_db": 5.0,
+    "snr_actual_db": 5.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene03_pink_snr10.wav",
+    "noise_type": "pink",
+    "snr_target_db": 10.0,
+    "snr_actual_db": 10.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene04_brown_snr8.wav",
+    "noise_type": "brown",
+    "snr_target_db": 8.0,
+    "snr_actual_db": 8.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene05_hum50_snr12.wav",
+    "noise_type": "hum_50hz",
+    "snr_target_db": 12.0,
+    "snr_actual_db": 12.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene06_hum60_snr12.wav",
+    "noise_type": "hum_60hz",
+    "snr_target_db": 12.0,
+    "snr_actual_db": 12.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene07_highfreq_hiss_snr10.wav",
+    "noise_type": "highfreq_hiss",
+    "snr_target_db": 10.0,
+    "snr_actual_db": 10.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene08_lowfreq_rumble_snr10.wav",
+    "noise_type": "lowfreq_rumble",
+    "snr_target_db": 10.0,
+    "snr_actual_db": 10.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene09_chirp_interference_snr8.wav",
+    "noise_type": "chirp_interference",
+    "snr_target_db": 8.0,
+    "snr_actual_db": 8.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene10_impulsive_clicks_snr9.wav",
+    "noise_type": "impulsive_clicks",
+    "snr_target_db": 9.0,
+    "snr_actual_db": 9.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene11_intermittent_bursts_snr7.wav",
+    "noise_type": "intermittent_bursts",
+    "snr_target_db": 7.0,
+    "snr_actual_db": 7.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene12_babble_like_snr5.wav",
+    "noise_type": "babble_like",
+    "snr_target_db": 5.0,
+    "snr_actual_db": 5.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene13_street_combo_snr6.wav",
+    "noise_type": "street_combo",
+    "snr_target_db": 6.0,
+    "snr_actual_db": 6.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene14_office_fan_snr9.wav",
+    "noise_type": "office_fan",
+    "snr_target_db": 9.0,
+    "snr_actual_db": 9.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  },
+  {
+    "file": "scene15_reverb_plus_hiss_snr10.wav",
+    "noise_type": "reverb_plus_hiss",
+    "snr_target_db": 10.0,
+    "snr_actual_db": 10.0,
+    "duration_sec": 5.618,
+    "sample_rate": 16000,
+    "clean_reference": "clean_reference.wav"
+  }
+]

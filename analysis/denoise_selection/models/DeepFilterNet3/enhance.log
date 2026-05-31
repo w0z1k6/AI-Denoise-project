@@ -1,0 +1,16 @@
+2026-05-30 17:52:18 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-30 17:52:18 | INFO     | DF | Running on host wozik16
+2026-05-30 17:52:19 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-30 17:52:19 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-30 17:52:19 | INFO     | DF | Found checkpoint analysis/denoise_selection/models/DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-30 17:52:19 | INFO     | DF | Running on device cpu
+2026-05-30 17:52:19 | INFO     | DF | Model loaded
+2026-05-30 17:52:28 | INFO     | DF | Enhanced noisy audio file 'scene02_white_snr5.wav' in 0.16s (RT factor: 0.028)
+2026-05-30 19:16:57 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-30 19:16:57 | INFO     | DF | Running on host wozik16
+2026-05-30 19:16:57 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-30 19:16:57 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-30 19:16:57 | INFO     | DF | Found checkpoint analysis/denoise_selection/models/DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-30 19:16:57 | INFO     | DF | Running on device cpu
+2026-05-30 19:16:57 | INFO     | DF | Model loaded
+2026-05-30 19:17:01 | INFO     | DF | Enhanced noisy audio file 'scene09_chirp_interference_snr8.wav' in 0.19s (RT factor: 0.034)

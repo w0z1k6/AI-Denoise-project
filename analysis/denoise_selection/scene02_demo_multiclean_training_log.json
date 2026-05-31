@@ -1,0 +1,10 @@
+{
+  "device": "cpu",
+  "clean_files": 160,
+  "steps_run": 900,
+  "elapsed_sec": 5.749674081802368,
+  "final_loss": 0.029950503259897232,
+  "noisy_err_rms": 0.019959815033049035,
+  "denoised_err_rms": 0.01619171523418675,
+  "output_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\scene02_demo_multiclean_trained_out.wav"
+}

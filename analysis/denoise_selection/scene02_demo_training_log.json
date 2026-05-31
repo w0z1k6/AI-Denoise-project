@@ -1,0 +1,7 @@
+{
+  "device": "cpu",
+  "steps_run": 500,
+  "elapsed_sec": 2.916395425796509,
+  "final_loss": 0.11549288779497147,
+  "output_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\scene02_demo_trained_out.wav"
+}

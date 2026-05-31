@@ -1,0 +1,16 @@
+file,noise_type,snr_target_db,snr_actual_db,duration_sec,sample_rate,clean_reference
+scene01_white_snr15.wav,white,15.0,15.0,5.618,16000,clean_reference.wav
+scene02_white_snr5.wav,white,5.0,5.0,5.618,16000,clean_reference.wav
+scene03_pink_snr10.wav,pink,10.0,10.0,5.618,16000,clean_reference.wav
+scene04_brown_snr8.wav,brown,8.0,8.0,5.618,16000,clean_reference.wav
+scene05_hum50_snr12.wav,hum_50hz,12.0,12.0,5.618,16000,clean_reference.wav
+scene06_hum60_snr12.wav,hum_60hz,12.0,12.0,5.618,16000,clean_reference.wav
+scene07_highfreq_hiss_snr10.wav,highfreq_hiss,10.0,10.0,5.618,16000,clean_reference.wav
+scene08_lowfreq_rumble_snr10.wav,lowfreq_rumble,10.0,10.0,5.618,16000,clean_reference.wav
+scene09_chirp_interference_snr8.wav,chirp_interference,8.0,8.0,5.618,16000,clean_reference.wav
+scene10_impulsive_clicks_snr9.wav,impulsive_clicks,9.0,9.0,5.618,16000,clean_reference.wav
+scene11_intermittent_bursts_snr7.wav,intermittent_bursts,7.0,7.0,5.618,16000,clean_reference.wav
+scene12_babble_like_snr5.wav,babble_like,5.0,5.0,5.618,16000,clean_reference.wav
+scene13_street_combo_snr6.wav,street_combo,6.0,6.0,5.618,16000,clean_reference.wav
+scene14_office_fan_snr9.wav,office_fan,9.0,9.0,5.618,16000,clean_reference.wav
+scene15_reverb_plus_hiss_snr10.wav,reverb_plus_hiss,10.0,10.0,5.618,16000,clean_reference.wav

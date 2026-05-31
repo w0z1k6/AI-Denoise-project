@@ -1,0 +1,159 @@
+{
+  "summary": {
+    "scene_count": 15,
+    "better_than_base_count": 14,
+    "mean_improve_vs_base_rms": 0.0009174727902582663
+  },
+  "scenes": {
+    "scene01_white_snr15": {
+      "noisy_err_rms": 0.006311883870153163,
+      "base_err_rms": 0.006377628885744165,
+      "routed_err_rms": 0.006229077169846278,
+      "improve_vs_noisy_rms": 8.28067003068849e-05,
+      "improve_vs_base_rms": 0.00014855171589788722,
+      "noisy_err_kurtosis": 2.996718105536516,
+      "base_err_kurtosis": 10.15747080430404,
+      "routed_err_kurtosis": 10.488153903508483
+    },
+    "scene02_white_snr5": {
+      "noisy_err_rms": 0.019959815033049035,
+      "base_err_rms": 0.010649991267911668,
+      "routed_err_rms": 0.010026719378768163,
+      "improve_vs_noisy_rms": 0.009933095654280872,
+      "improve_vs_base_rms": 0.0006232718891435052,
+      "noisy_err_kurtosis": 2.9895165321742714,
+      "base_err_kurtosis": 8.093795691944553,
+      "routed_err_kurtosis": 7.877079536196937
+    },
+    "scene03_pink_snr10": {
+      "noisy_err_rms": 0.011224118456582851,
+      "base_err_rms": 0.008077418173869585,
+      "routed_err_rms": 0.008077418173869585,
+      "improve_vs_noisy_rms": 0.0031467002827132665,
+      "improve_vs_base_rms": 0.0,
+      "noisy_err_kurtosis": 3.0092163167696495,
+      "base_err_kurtosis": 7.5469914025778815,
+      "routed_err_kurtosis": 7.5469914025778815
+    },
+    "scene04_brown_snr8": {
+      "noisy_err_rms": 0.014130250961145454,
+      "base_err_rms": 0.005958831342084475,
+      "routed_err_rms": 0.0055480576172911,
+      "improve_vs_noisy_rms": 0.008582193343854353,
+      "improve_vs_base_rms": 0.0004107737247933752,
+      "noisy_err_kurtosis": 5.423237536568431,
+      "base_err_kurtosis": 9.268276708444414,
+      "routed_err_kurtosis": 11.124483782328772
+    },
+    "scene05_hum50_snr12": {
+      "noisy_err_rms": 0.008915735118321522,
+      "base_err_rms": 0.0062015648762374365,
+      "routed_err_rms": 0.005380109944657639,
+      "improve_vs_noisy_rms": 0.0035356251736638833,
+      "improve_vs_base_rms": 0.0008214549315797978,
+      "noisy_err_kurtosis": 1.7350959449528491,
+      "base_err_kurtosis": 8.760849642700046,
+      "routed_err_kurtosis": 11.103097937645153
+    },
+    "scene06_hum60_snr12": {
+      "noisy_err_rms": 0.008915782858903223,
+      "base_err_rms": 0.0065267336187022,
+      "routed_err_rms": 0.005543703231427422,
+      "improve_vs_noisy_rms": 0.0033720796274758014,
+      "improve_vs_base_rms": 0.0009830303872747784,
+      "noisy_err_kurtosis": 1.7349799524313785,
+      "base_err_kurtosis": 7.667590973679547,
+      "routed_err_kurtosis": 11.078847679053942
+    },
+    "scene07_highfreq_hiss_snr10": {
+      "noisy_err_rms": 0.01122426884798011,
+      "base_err_rms": 0.006597174352562165,
+      "routed_err_rms": 0.0065455017670358155,
+      "improve_vs_noisy_rms": 0.004678767080944295,
+      "improve_vs_base_rms": 5.167258552634963e-05,
+      "noisy_err_kurtosis": 3.0105172308763866,
+      "base_err_kurtosis": 10.763579214107907,
+      "routed_err_kurtosis": 10.840670375923256
+    },
+    "scene08_lowfreq_rumble_snr10": {
+      "noisy_err_rms": 0.011224253938578123,
+      "base_err_rms": 0.007108401062903843,
+      "routed_err_rms": 0.0067339105623112185,
+      "improve_vs_noisy_rms": 0.004490343376266905,
+      "improve_vs_base_rms": 0.00037449050059262454,
+      "noisy_err_kurtosis": 3.049394925122289,
+      "base_err_kurtosis": 6.340660047941243,
+      "routed_err_kurtosis": 6.561988670175749
+    },
+    "scene09_chirp_interference_snr8": {
+      "noisy_err_rms": 0.014130471860365633,
+      "base_err_rms": 0.01505803418182787,
+      "routed_err_rms": 0.011852953208304207,
+      "improve_vs_noisy_rms": 0.0022775186520614266,
+      "improve_vs_base_rms": 0.0032050809735236635,
+      "noisy_err_kurtosis": 1.501198228564411,
+      "base_err_kurtosis": 2.0507403679857044,
+      "routed_err_kurtosis": 4.119021740853996
+    },
+    "scene10_impulsive_clicks_snr9": {
+      "noisy_err_rms": 0.012593842771024499,
+      "base_err_rms": 0.010622106952672511,
+      "routed_err_rms": 0.00844591253315774,
+      "improve_vs_noisy_rms": 0.004147930237866759,
+      "improve_vs_base_rms": 0.0021761944195147712,
+      "noisy_err_kurtosis": 130.18525950229306,
+      "base_err_kurtosis": 15.285082559163456,
+      "routed_err_kurtosis": 21.217878326591084
+    },
+    "scene11_intermittent_bursts_snr7": {
+      "noisy_err_rms": 0.01585471711364112,
+      "base_err_rms": 0.015956428638544122,
+      "routed_err_rms": 0.014117208696733058,
+      "improve_vs_noisy_rms": 0.001737508416908064,
+      "improve_vs_base_rms": 0.0018392199418110645,
+      "noisy_err_kurtosis": 24.251370911421052,
+      "base_err_kurtosis": 20.43422469003295,
+      "routed_err_kurtosis": 12.681062086893437
+    },
+    "scene12_babble_like_snr5": {
+      "noisy_err_rms": 0.019959827427075815,
+      "base_err_rms": 0.014582552397251751,
+      "routed_err_rms": 0.013790183941074261,
+      "improve_vs_noisy_rms": 0.006169643486001554,
+      "improve_vs_base_rms": 0.0007923684561774898,
+      "noisy_err_kurtosis": 3.1129187265004323,
+      "base_err_kurtosis": 6.9669356209013085,
+      "routed_err_kurtosis": 7.098660473409112
+    },
+    "scene13_street_combo_snr6": {
+      "noisy_err_rms": 0.017789209124459207,
+      "base_err_rms": 0.010016339289807682,
+      "routed_err_rms": 0.009323598946731829,
+      "improve_vs_noisy_rms": 0.008465610177727378,
+      "improve_vs_base_rms": 0.0006927403430758532,
+      "noisy_err_kurtosis": 3.1872368261840167,
+      "base_err_kurtosis": 7.282309841961627,
+      "routed_err_kurtosis": 6.41389932518506
+    },
+    "scene14_office_fan_snr9": {
+      "noisy_err_rms": 0.012593815617249218,
+      "base_err_rms": 0.009447911682989111,
+      "routed_err_rms": 0.00784798018786775,
+      "improve_vs_noisy_rms": 0.004745835429381468,
+      "improve_vs_base_rms": 0.0015999314951213612,
+      "noisy_err_kurtosis": 2.0195261428700797,
+      "base_err_kurtosis": 9.981209320276918,
+      "routed_err_kurtosis": 7.84673766934548
+    },
+    "scene15_reverb_plus_hiss_snr10": {
+      "noisy_err_rms": 0.01122423060208308,
+      "base_err_rms": 0.007286400881139663,
+      "routed_err_rms": 0.007243090391298191,
+      "improve_vs_noisy_rms": 0.003981140210784889,
+      "improve_vs_base_rms": 4.331048984147247e-05,
+      "noisy_err_kurtosis": 3.001441504039413,
+      "base_err_kurtosis": 9.71142957710276,
+      "routed_err_kurtosis": 9.68726721895527
+    }
+  }
+}

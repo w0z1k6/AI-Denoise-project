@@ -1,0 +1,137 @@
+[
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene01_white_snr15.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene01_white_snr15_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene02_white_snr5.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene02_white_snr5_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene03_pink_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene03_pink_snr10_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene04_brown_snr8.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene04_brown_snr8_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene05_hum50_snr12.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene05_hum50_snr12_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene06_hum60_snr12.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene06_hum60_snr12_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene07_highfreq_hiss_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene07_highfreq_hiss_snr10_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene08_lowfreq_rumble_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene08_lowfreq_rumble_snr10_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene09_chirp_interference_snr8.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene09_chirp_interference_snr8_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene10_impulsive_clicks_snr9.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene10_impulsive_clicks_snr9_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene11_intermittent_bursts_snr7.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene11_intermittent_bursts_snr7_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene12_babble_like_snr5.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene12_babble_like_snr5_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene13_street_combo_snr6.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene13_street_combo_snr6_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene14_office_fan_snr9.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene14_office_fan_snr9_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene15_reverb_plus_hiss_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\base\\scene15_reverb_plus_hiss_snr10_routed.wav",
+    "route_name": "force_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "forced by CLI argument"
+  }
+]

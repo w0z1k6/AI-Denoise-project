@@ -1,0 +1,43 @@
+{
+  "snr_distribution_summary_db": {
+    "p10_of_local_snr": -40.0,
+    "median_of_local_snr": -0.6157280326829858,
+    "p90_of_local_snr": 50.0
+  },
+  "suggested_ranges": {
+    "alpha_low": [
+      1.4,
+      2.0
+    ],
+    "alpha_high": [
+      3.2,
+      4.0
+    ],
+    "beta_low": [
+      0.008,
+      0.0176
+    ],
+    "beta_high": [
+      0.045,
+      0.0765
+    ],
+    "noise_update": [
+      0.87,
+      0.93
+    ],
+    "time_smoothing": [
+      0.15,
+      0.35
+    ],
+    "freq_smoothing": [
+      0.05,
+      0.16
+    ]
+  },
+  "priority_optimization_scenarios": [
+    "scene12_babble_like_snr5",
+    "scene10_impulsive_clicks_snr9",
+    "scene09_chirp_interference_snr8",
+    "scene11_intermittent_bursts_snr7"
+  ]
+}

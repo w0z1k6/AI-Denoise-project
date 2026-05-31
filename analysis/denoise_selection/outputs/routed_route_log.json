@@ -1,0 +1,137 @@
+[
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene01_white_snr15.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene01_white_snr15_routed.wav",
+    "route_name": "override_nmf_denoise",
+    "chain": [
+      "nmf_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene02_white_snr5.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene02_white_snr5_routed.wav",
+    "route_name": "override_nmf_denoise",
+    "chain": [
+      "nmf_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene03_pink_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene03_pink_snr10_routed.wav",
+    "route_name": "override_base_omlsa_mcra",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene04_brown_snr8.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene04_brown_snr8_routed.wav",
+    "route_name": "override_subspace_denoise",
+    "chain": [
+      "subspace_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene05_hum50_snr12.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene05_hum50_snr12_routed.wav",
+    "route_name": "override_subspace_denoise",
+    "chain": [
+      "subspace_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene06_hum60_snr12.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene06_hum60_snr12_routed.wav",
+    "route_name": "override_nmf_denoise",
+    "chain": [
+      "nmf_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene07_highfreq_hiss_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene07_highfreq_hiss_snr10_routed.wav",
+    "route_name": "override_wpe_omlsa",
+    "chain": [
+      "wpe_omlsa"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene08_lowfreq_rumble_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene08_lowfreq_rumble_snr10_routed.wav",
+    "route_name": "override_subspace_denoise",
+    "chain": [
+      "subspace_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene09_chirp_interference_snr8.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene09_chirp_interference_snr8_routed.wav",
+    "route_name": "override_chirp_notch",
+    "chain": [
+      "chirp_notch"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene10_impulsive_clicks_snr9.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene10_impulsive_clicks_snr9_routed.wav",
+    "route_name": "override_nmf_denoise",
+    "chain": [
+      "nmf_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene11_intermittent_bursts_snr7.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene11_intermittent_bursts_snr7_routed.wav",
+    "route_name": "override_kalman_ar",
+    "chain": [
+      "kalman_ar"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene12_babble_like_snr5.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene12_babble_like_snr5_routed.wav",
+    "route_name": "override_wpe_omlsa",
+    "chain": [
+      "wpe_omlsa"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene13_street_combo_snr6.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene13_street_combo_snr6_routed.wav",
+    "route_name": "override_subspace_denoise",
+    "chain": [
+      "subspace_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene14_office_fan_snr9.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene14_office_fan_snr9_routed.wav",
+    "route_name": "override_nmf_denoise",
+    "chain": [
+      "nmf_denoise"
+    ],
+    "reason": "scene override from config"
+  },
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene15_reverb_plus_hiss_snr10.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene15_reverb_plus_hiss_snr10_routed.wav",
+    "route_name": "override_wpe_omlsa",
+    "chain": [
+      "wpe_omlsa"
+    ],
+    "reason": "scene override from config"
+  }
+]

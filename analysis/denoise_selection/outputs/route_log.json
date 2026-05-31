@@ -1,0 +1,11 @@
+[
+  {
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene01_white_snr15.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene01_white_snr15_routed.wav",
+    "route_name": "base_chain",
+    "chain": [
+      "base_omlsa_mcra"
+    ],
+    "reason": "default fallback"
+  }
+]

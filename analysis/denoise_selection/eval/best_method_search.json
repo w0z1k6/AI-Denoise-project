@@ -1,0 +1,227 @@
+{
+  "scene01_white_snr15.wav": {
+    "best_method": "nmf_denoise",
+    "best_err_rms": 0.006226511574072485,
+    "base_err_rms": 0.0063750360481255874,
+    "improve_vs_base_rms": 0.00014852447405310203,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.0063750360481255874,
+      "wpe_omlsa": 0.006392028489071682,
+      "nmf_denoise": 0.006226511574072485,
+      "kalman_ar": 0.013947238042829182,
+      "subspace_denoise": 0.009325093256217934,
+      "adaptive_notch_bank": 0.007164279557295148,
+      "chirp_notch": 0.0063750360481255874
+    }
+  },
+  "scene02_white_snr5.wav": {
+    "best_method": "nmf_denoise",
+    "best_err_rms": 0.010024705478756286,
+    "base_err_rms": 0.01064732068860165,
+    "improve_vs_base_rms": 0.0006226152098453633,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.01064732068860165,
+      "wpe_omlsa": 0.01069286798514065,
+      "nmf_denoise": 0.010024705478756286,
+      "kalman_ar": 0.020536855609533645,
+      "subspace_denoise": 0.010861330809201942,
+      "adaptive_notch_bank": 0.011242283088326326,
+      "chirp_notch": 0.01064732068860165
+    }
+  },
+  "scene03_pink_snr10.wav": {
+    "best_method": "base_omlsa_mcra",
+    "best_err_rms": 0.008072976118723678,
+    "base_err_rms": 0.008072976118723678,
+    "improve_vs_base_rms": 0.0,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.008072976118723678,
+      "wpe_omlsa": 0.008134200433050092,
+      "nmf_denoise": 0.008083982625756382,
+      "kalman_ar": 0.013057705435232556,
+      "subspace_denoise": 0.008654360287208542,
+      "adaptive_notch_bank": 0.008869623618710605,
+      "chirp_notch": 0.008072976118723678
+    }
+  },
+  "scene04_brown_snr8.wav": {
+    "best_method": "subspace_denoise",
+    "best_err_rms": 0.005541440395264028,
+    "base_err_rms": 0.005953250417938713,
+    "improve_vs_base_rms": 0.00041181002267468535,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.005953250417938713,
+      "wpe_omlsa": 0.005812834289846361,
+      "nmf_denoise": 0.007930079958172293,
+      "kalman_ar": 0.009063088164365213,
+      "subspace_denoise": 0.005541440395264028,
+      "adaptive_notch_bank": 0.007097360177614092,
+      "chirp_notch": 0.007280798265582872
+    }
+  },
+  "scene05_hum50_snr12.wav": {
+    "best_method": "subspace_denoise",
+    "best_err_rms": 0.005375046445645959,
+    "base_err_rms": 0.006197038897012222,
+    "improve_vs_base_rms": 0.0008219924513662626,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.006197038897012222,
+      "wpe_omlsa": 0.005799908261141225,
+      "nmf_denoise": 0.005734271110781285,
+      "kalman_ar": 0.009413953370867648,
+      "subspace_denoise": 0.005375046445645959,
+      "adaptive_notch_bank": 0.006293837584297312,
+      "chirp_notch": 0.007656053048514681
+    }
+  },
+  "scene06_hum60_snr12.wav": {
+    "best_method": "nmf_denoise",
+    "best_err_rms": 0.005539179918559887,
+    "base_err_rms": 0.006522720244391187,
+    "improve_vs_base_rms": 0.0009835403258313,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.006522720244391187,
+      "wpe_omlsa": 0.006212721204703123,
+      "nmf_denoise": 0.005539179918559887,
+      "kalman_ar": 0.00963669285976805,
+      "subspace_denoise": 0.005637647403211812,
+      "adaptive_notch_bank": 0.006121033109789636,
+      "chirp_notch": 0.007916805727843914
+    }
+  },
+  "scene07_highfreq_hiss_snr10.wav": {
+    "best_method": "wpe_omlsa",
+    "best_err_rms": 0.006542817822536992,
+    "base_err_rms": 0.006594450754945796,
+    "improve_vs_base_rms": 5.163293240880405e-05,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.006594450754945796,
+      "wpe_omlsa": 0.006542817822536992,
+      "nmf_denoise": 0.006638306893679296,
+      "kalman_ar": 0.016422069281912807,
+      "subspace_denoise": 0.008064384665995574,
+      "adaptive_notch_bank": 0.007311235850713418,
+      "chirp_notch": 0.006594450754945796
+    }
+  },
+  "scene08_lowfreq_rumble_snr10.wav": {
+    "best_method": "subspace_denoise",
+    "best_err_rms": 0.006728704615264959,
+    "base_err_rms": 0.0071036941457799044,
+    "improve_vs_base_rms": 0.0003749895305149454,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.0071036941457799044,
+      "wpe_omlsa": 0.007106672040151548,
+      "nmf_denoise": 0.00674926903381869,
+      "kalman_ar": 0.00995369840450542,
+      "subspace_denoise": 0.006728704615264959,
+      "adaptive_notch_bank": 0.007793761733692578,
+      "chirp_notch": 0.00840129899600343
+    }
+  },
+  "scene09_chirp_interference_snr8.wav": {
+    "best_method": "chirp_notch",
+    "best_err_rms": 0.011851466979723696,
+    "base_err_rms": 0.01505685127550304,
+    "improve_vs_base_rms": 0.003205384295779344,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.01505685127550304,
+      "wpe_omlsa": 0.015039149733814974,
+      "nmf_denoise": 0.014923549163848063,
+      "kalman_ar": 0.013587571507040206,
+      "subspace_denoise": 0.016449932709535563,
+      "adaptive_notch_bank": 0.015372096920958003,
+      "chirp_notch": 0.011851466979723696
+    }
+  },
+  "scene10_impulsive_clicks_snr9.wav": {
+    "best_method": "nmf_denoise",
+    "best_err_rms": 0.008442967492031486,
+    "base_err_rms": 0.010619168313650633,
+    "improve_vs_base_rms": 0.0021762008216191474,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.010619168313650633,
+      "wpe_omlsa": 0.010623791533605969,
+      "nmf_denoise": 0.008442967492031486,
+      "kalman_ar": 0.014591224555079439,
+      "subspace_denoise": 0.01134647319406773,
+      "adaptive_notch_bank": 0.010913372575218913,
+      "chirp_notch": 0.010986240087738873
+    }
+  },
+  "scene11_intermittent_bursts_snr7.wav": {
+    "best_method": "kalman_ar",
+    "best_err_rms": 0.01411564025855985,
+    "base_err_rms": 0.015955255791462064,
+    "improve_vs_base_rms": 0.0018396155329022147,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.015955255791462064,
+      "wpe_omlsa": 0.015926149592437627,
+      "nmf_denoise": 0.015977360312988215,
+      "kalman_ar": 0.01411564025855985,
+      "subspace_denoise": 0.016860918790977654,
+      "adaptive_notch_bank": 0.016266162606968077,
+      "chirp_notch": 0.016409626995628313
+    }
+  },
+  "scene12_babble_like_snr5.wav": {
+    "best_method": "wpe_omlsa",
+    "best_err_rms": 0.013788924457948572,
+    "base_err_rms": 0.014581289002321933,
+    "improve_vs_base_rms": 0.0007923645443733609,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.014581289002321933,
+      "wpe_omlsa": 0.013788924457948572,
+      "nmf_denoise": 0.01389841698003022,
+      "kalman_ar": 0.016183249718569635,
+      "subspace_denoise": 0.015290607212775392,
+      "adaptive_notch_bank": 0.014813492660648941,
+      "chirp_notch": 0.015256184865319622
+    }
+  },
+  "scene13_street_combo_snr6.wav": {
+    "best_method": "subspace_denoise",
+    "best_err_rms": 0.009320550280890976,
+    "base_err_rms": 0.010013055020110257,
+    "improve_vs_base_rms": 0.0006925047392192813,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.010013055020110257,
+      "wpe_omlsa": 0.0099975690945833,
+      "nmf_denoise": 0.009928928652418774,
+      "kalman_ar": 0.016005082369737585,
+      "subspace_denoise": 0.009320550280890976,
+      "adaptive_notch_bank": 0.010367220850911978,
+      "chirp_notch": 0.010013055020110257
+    }
+  },
+  "scene14_office_fan_snr9.wav": {
+    "best_method": "nmf_denoise",
+    "best_err_rms": 0.007845914310138489,
+    "base_err_rms": 0.009446023177688175,
+    "improve_vs_base_rms": 0.001600108867549686,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.009446023177688175,
+      "wpe_omlsa": 0.008235124836272584,
+      "nmf_denoise": 0.007845914310138489,
+      "kalman_ar": 0.012015309410566498,
+      "subspace_denoise": 0.00845990553893251,
+      "adaptive_notch_bank": 0.008887988458240386,
+      "chirp_notch": 0.010378173335224257
+    }
+  },
+  "scene15_reverb_plus_hiss_snr10.wav": {
+    "best_method": "wpe_omlsa",
+    "best_err_rms": 0.007240518066792786,
+    "base_err_rms": 0.007283914774741029,
+    "improve_vs_base_rms": 4.3396707948242796e-05,
+    "all_methods_err_rms": {
+      "base_omlsa_mcra": 0.007283914774741029,
+      "wpe_omlsa": 0.007240518066792786,
+      "nmf_denoise": 0.007267576548800047,
+      "kalman_ar": 0.01779247272183563,
+      "subspace_denoise": 0.008496700675499567,
+      "adaptive_notch_bank": 0.00796853148966292,
+      "chirp_notch": 0.007283914774741029
+    }
+  }
+}
