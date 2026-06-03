@@ -6,6 +6,7 @@ import GlassCard from "../components/GlassCard";
 import StatChip from "../components/StatChip";
 import { useI18n } from "../i18n/I18nContext";
 import { getPlots } from "../lib/api";
+import { highlightText } from "../lib/highlight";
 import { plotLayoutBase } from "../lib/plotTheme";
 import type { PlotGroup, PlotItem } from "../types/api";
 
@@ -14,6 +15,9 @@ type Props = {
 };
 
 const OPEN_KEY = (taskId: string) => `chart_open_${taskId}`;
+const HEIGHT_KEY = "chart_plot_height";
+
+const HEIGHT_OPTIONS = [280, 350, 420] as const;
 
 function loadOpenState(taskId: string, groups: PlotGroup[]): Record<string, boolean> {
   try {
@@ -25,7 +29,27 @@ function loadOpenState(taskId: string, groups: PlotGroup[]): Record<string, bool
   return Object.fromEntries(groups.map((g) => [g.group, true]));
 }
 
-function PlotCard({ plot, theme }: { plot: PlotItem; theme: "light" | "dark" }) {
+function loadChartHeight(): number {
+  try {
+    const n = Number(localStorage.getItem(HEIGHT_KEY));
+    if (HEIGHT_OPTIONS.includes(n as (typeof HEIGHT_OPTIONS)[number])) return n;
+  } catch {
+    /* ignore */
+  }
+  return 350;
+}
+
+function PlotCard({
+  plot,
+  theme,
+  heightPx,
+  keyword,
+}: {
+  plot: PlotItem;
+  theme: "light" | "dark";
+  heightPx: number;
+  keyword: string;
+}) {
   const graphRef = useRef<HTMLElement | null>(null);
   const { t } = useI18n();
   const baseLayout = plotLayoutBase(theme);
@@ -38,7 +62,7 @@ function PlotCard({ plot, theme }: { plot: PlotItem; theme: "light" | "dark" }) 
   return (
     <div className="plot-shell">
       <div className="row between" style={{ marginBottom: 8 }}>
-        <h4 className="section-title">{plot.title}</h4>
+        <h4 className="section-title plot-title">{highlightText(plot.title, keyword)}</h4>
         <GlassButton variant="accent" onClick={exportPng}>
           {t("exportPng")}
         </GlassButton>
@@ -52,7 +76,7 @@ function PlotCard({ plot, theme }: { plot: PlotItem; theme: "light" | "dark" }) 
             title: { ...(baseLayout.title as object), text: plot.title },
           }}
           config={{ responsive: true, displaylogo: false, displayModeBar: true }}
-          style={{ width: "100%", height: "350px" }}
+          style={{ width: "100%", height: `${heightPx}px` }}
           onInitialized={(_figure: unknown, graphDiv: HTMLElement) => {
             graphRef.current = graphDiv;
           }}
@@ -70,6 +94,7 @@ export default function ChartCenterPage({ taskId }: Props) {
   const [groups, setGroups] = useState<PlotGroup[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [keyword, setKeyword] = useState("");
+  const [chartHeight, setChartHeight] = useState(loadChartHeight);
 
   useEffect(() => {
     if (!taskId) return;
@@ -83,6 +108,10 @@ export default function ChartCenterPage({ taskId }: Props) {
     if (!taskId || groups.length === 0) return;
     localStorage.setItem(OPEN_KEY(taskId), JSON.stringify(open));
   }, [open, taskId, groups.length]);
+
+  useEffect(() => {
+    localStorage.setItem(HEIGHT_KEY, String(chartHeight));
+  }, [chartHeight]);
 
   const filteredGroups = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -123,6 +152,16 @@ export default function ChartCenterPage({ taskId }: Props) {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
           />
+          <label className="chart-height-picker">
+            {t("chartHeight")}
+            <select value={chartHeight} onChange={(e) => setChartHeight(Number(e.target.value))}>
+              {HEIGHT_OPTIONS.map((h) => (
+                <option key={h} value={h}>
+                  {h}px
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="actions">
             <GlassButton variant="secondary" onClick={() => setAllOpen(true)}>
               {t("expandAll")}
@@ -144,7 +183,7 @@ export default function ChartCenterPage({ taskId }: Props) {
         <section key={g.group} className="chart-group">
           <div className="chart-group-header">
             <div>
-              <h3 className="chart-group-title">{g.title}</h3>
+              <h3 className="chart-group-title">{highlightText(g.title, keyword)}</h3>
               <span className="chart-group-count">{g.plots.length} charts</span>
             </div>
             <GlassButton variant="secondary" onClick={() => toggleGroup(g.group)}>
@@ -153,11 +192,13 @@ export default function ChartCenterPage({ taskId }: Props) {
           </div>
           <div className={`collapse-panel ${open[g.group] ? "open" : ""}`}>
             <div className="collapse-panel-inner">
-              <div className="chart-grid">
-                {g.plots.map((p) => (
-                  <PlotCard key={p.id} plot={p} theme={theme} />
-                ))}
-              </div>
+              {open[g.group] ? (
+                <div className="chart-grid">
+                  {g.plots.map((p) => (
+                    <PlotCard key={p.id} plot={p} theme={theme} heightPx={chartHeight} keyword={keyword} />
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </section>

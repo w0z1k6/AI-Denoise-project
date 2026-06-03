@@ -18,7 +18,19 @@ const navPaths = [
 
 export default function GlassNav({ currentTaskId }: Props) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { t, toggleLang, toggleTheme, theme } = useI18n();
+
+  const copyTask = async () => {
+    if (!currentTaskId) return;
+    try {
+      await navigator.clipboard.writeText(currentTaskId);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
     <header className="glass-nav-shell">
@@ -44,11 +56,22 @@ export default function GlassNav({ currentTaskId }: Props) {
           ))}
         </nav>
         <div className="glass-nav-right">
-          <span className="task-pill">
-            {t("taskLabel")}: {currentTaskId || "-"}
+          <span className="task-pill" title={currentTaskId || undefined}>
+            <span className="task-pill-label">{t("taskLabel")}</span>
+            <code>{currentTaskId || "—"}</code>
+            {currentTaskId ? (
+              <button type="button" className="task-copy-btn" onClick={copyTask}>
+                {copied ? t("copied") : t("copyTaskId")}
+              </button>
+            ) : null}
           </span>
-          <GlassButton className="icon-btn" variant="ghost" onClick={toggleTheme} title={theme === "light" ? t("themeDark") : t("themeLight")}>
-            {theme === "light" ? "🌙" : "☀️"}
+          <GlassButton
+            className="icon-btn"
+            variant="ghost"
+            onClick={toggleTheme}
+            title={theme === "light" ? t("themeDark") : t("themeLight")}
+          >
+            <span className={`theme-icon theme-icon-${theme === "light" ? "moon" : "sun"}`} aria-hidden="true" />
           </GlassButton>
           <GlassButton className="icon-btn" variant="ghost" onClick={toggleLang}>
             {t("langSwitch")}

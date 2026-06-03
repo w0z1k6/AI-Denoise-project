@@ -214,8 +214,21 @@
 .glass-nav-link.active {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(59, 130, 246, 0.25);
-  box-shadow: var(--neu-raised-sm);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: var(--neu-inset-sm);
+  font-weight: 700;
+  position: relative;
+}
+
+.glass-nav-link.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-cyan));
 }
 
 .glass-nav-right {
