@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 from typing import Callable
@@ -10,6 +8,11 @@ import numpy as np
 from scipy.signal import wiener
 
 from app.core.errors import ApiError
+from app.services.deepfilter_backend import (
+    DeepFilterNetError,
+    resolve_model_dir,
+    run_deepfilter,
+)
 
 PROJECT_DENOISE_ROOT = Path(__file__).resolve().parents[4]
 if str(PROJECT_DENOISE_ROOT) not in sys.path:
@@ -47,25 +50,6 @@ def _run_noisereduce(x: np.ndarray, sr: int, strength: float) -> np.ndarray:
     return nr.reduce_noise(y=x, sr=sr, prop_decrease=float(np.clip(strength, 0.1, 1.0))).astype(np.float32)
 
 
-def _run_deepfilter(in_wav: Path, out_wav: Path, model_dir: str | None) -> bool:
-    cli = shutil.which("deepFilter") or shutil.which("deep-filter")
-    if not cli:
-        return False
-    out_wav.parent.mkdir(parents=True, exist_ok=True)
-    out_dir = out_wav.parent
-    cmd = [cli, str(in_wav), "-o", str(out_dir), "--no-suffix"]
-    if model_dir:
-        cmd += ["-m", model_dir]
-    done = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    produced = out_dir / in_wav.name
-    if done.returncode == 0 and produced.exists():
-        if out_wav.exists():
-            out_wav.unlink()
-        produced.rename(out_wav)
-        return True
-    return False
-
-
 def run_denoise(
     input_wav: Path,
     output_wav: Path,
@@ -84,15 +68,14 @@ def run_denoise(
         route = ["wiener"]
         reason = "explicit scipy wiener"
     elif method == "deepfilter":
-        ok = _run_deepfilter(input_wav, output_wav, deepfilter_model_dir)
-        if ok:
+        try:
+            model_dir = resolve_model_dir(PROJECT_DENOISE_ROOT, deepfilter_model_dir)
+            engine = run_deepfilter(input_wav, output_wav, model_dir)
             y, _ = load_audio_mono(output_wav)
             route = ["deepfilter"]
-            reason = "explicit deepfilter"
-        else:
-            y = base_omlsa_mcra(x, sr)
-            route = ["base_omlsa_mcra"]
-            reason = "deepfilter unavailable fallback"
+            reason = f"DeepFilterNet3 via {engine} ({model_dir.name})"
+        except DeepFilterNetError as exc:
+            raise ApiError("deepfilter_failed", str(exc), 503) from exc
     elif method == "omlsa":
         y = base_omlsa_mcra(x, sr)
         route = ["base_omlsa_mcra"]
@@ -114,7 +97,15 @@ def run_denoise(
     else:
         raise ApiError("bad_method", f"Unsupported method: {method}", 400)
 
-    save_audio(output_wav, y, sr)
+    if method != "deepfilter":
+        save_audio(output_wav, y, sr)
     residual = (x[: len(y)] - y[: len(x)]).astype(np.float32)
-    return {"sample_rate": sr, "route": route, "reason": reason, "residual": residual, "original": x, "denoised": y}
+    return {
+        "sample_rate": sr,
+        "route": route,
+        "reason": reason,
+        "residual": residual,
+        "original": x,
+        "denoised": y,
+    }
 

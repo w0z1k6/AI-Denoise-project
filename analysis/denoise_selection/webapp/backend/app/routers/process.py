@@ -59,6 +59,16 @@ def _do_process(req: ProcessRequest) -> None:
             sr=result["sample_rate"],
             route=result["route"],
             method=req.method,
+            reason=result.get("reason", ""),
+        )
+        TASK_STORE.patch(
+            req.task_id,
+            {
+                "progress": 0.9,
+                "message": result.get("reason", "completed"),
+                "route": result["route"],
+                "reason": result.get("reason", ""),
+            },
         )
         save_metrics_and_plots(metrics, plots, metrics_json, plots_json)
 

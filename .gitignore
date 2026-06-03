@@ -19,7 +19,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
-
 # LaTeX auxiliary files (keep report.pdf and sources)
 report/*.aux
 report/*.log
@@ -46,3 +45,8 @@ analysis/denoise_selection/webapp/data/processed/*
 
 # Local enhance logs
 **/enhance.log
+
+# DeepFilter local test outputs
+analysis/denoise_selection/webapp/data/_df_test/
+analysis/denoise_selection/webapp/data/_df_web_test.wav
+

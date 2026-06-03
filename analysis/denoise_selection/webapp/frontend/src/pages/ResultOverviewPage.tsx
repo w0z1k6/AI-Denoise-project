@@ -53,6 +53,8 @@ export default function ResultOverviewPage({ taskId }: Props) {
       <GlassCard title={t("metricTitle")} subtitle={t("metricSubtitle")}>
         <div className="grid3">
           <StatChip label={t("methodLabel")} value={metrics?.method ?? "-"} />
+          <StatChip label={t("routeLabel")} value={metrics?.route?.join(" → ") ?? "-"} />
+          <StatChip label={t("reasonLabel")} value={metrics?.reason ?? task?.reason ?? "-"} />
           <StatChip label={t("inputSnr")} value={metrics?.snr_db?.input_est?.toFixed(3) ?? "-"} />
           <StatChip label={t("outputSnr")} value={metrics?.snr_db?.output_est?.toFixed(3) ?? "-"} />
           <StatChip label={t("deltaSnr")} value={metrics?.snr_db?.delta?.toFixed(3) ?? "-"} />

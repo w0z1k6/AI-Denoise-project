@@ -95,6 +95,7 @@ def build_metrics_and_plots(
     sr: int,
     route: list[str],
     method: str,
+    reason: str = "",
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     n = min(len(original), len(denoised), len(residual))
     original = original[:n]
@@ -137,6 +138,7 @@ def build_metrics_and_plots(
         "length_sec": float(n / sr),
         "method": method,
         "route": route,
+        "reason": reason,
         "rms": {"original": _rms(original), "denoised": _rms(denoised), "residual": _rms(residual)},
         "snr_db": {"input_est": snr_in, "output_est": snr_out, "delta": snr_delta},
         "residual_stats": {

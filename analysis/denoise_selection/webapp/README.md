@@ -137,6 +137,6 @@ npm test
 ## Notes
 
 - If `.mp3` conversion fails, install `ffmpeg`.
-- `deepfilter` mode falls back to OMLSA if CLI/model unavailable.
+- `deepfilter` mode runs **DeepFilterNet3** via CLI (`deepFilter`). Set `DEEPFILTER_CONDA_ENV=dfnet311` (or `DEEPFILTER_CLI`) so the backend uses the same environment as local tests. If CLI/model fails, the task returns **503** with an error message (no silent OM-LSA fallback).
 - Large files are persisted in `webapp/data/`.
 

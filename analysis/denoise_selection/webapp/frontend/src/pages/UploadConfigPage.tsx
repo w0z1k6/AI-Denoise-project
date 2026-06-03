@@ -52,7 +52,7 @@ export default function UploadConfigPage({ setTaskId }: Props) {
               <option value="noisereduce">noisereduce</option>
               <option value="wiener">wiener</option>
               <option value="omlsa">omlsa</option>
-              <option value="deepfilter">deepfilter</option>
+              <option value="deepfilter">deepfilter (DeepFilterNet3)</option>
               <option value="base_omlsa_mcra">base_omlsa_mcra</option>
               <option value="kalman_ar">kalman_ar</option>
               <option value="subspace_denoise">subspace_denoise</option>
@@ -72,6 +72,11 @@ export default function UploadConfigPage({ setTaskId }: Props) {
             {loading ? t("uploading") : t("uploadBtn")}
           </GlassButton>
         </div>
+        {method === "deepfilter" ? (
+          <p className="muted">
+            DeepFilterNet3 需后端配置 DEEPFILTER_CONDA_ENV=dfnet311（与本地 DFN3 相同 conda 环境）。
+          </p>
+        ) : null}
         {msg ? <p className="muted">{msg}</p> : null}
       </div>
     </GlassCard>

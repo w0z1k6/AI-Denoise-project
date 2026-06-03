@@ -34,6 +34,8 @@ export interface TaskItem {
   settings: Record<string, unknown>;
   paths: Record<string, string | null>;
   bookmarks: { time_sec: number; note: string }[];
+  route?: string[];
+  reason?: string;
 }
 
 export interface MetricsPayload {
@@ -41,6 +43,7 @@ export interface MetricsPayload {
   length_sec: number;
   method: string;
   route: string[];
+  reason?: string;
   rms: Record<string, number>;
   snr_db: Record<string, number>;
   residual_stats: Record<string, number>;
