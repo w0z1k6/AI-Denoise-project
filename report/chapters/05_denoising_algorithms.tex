@@ -1,0 +1,791 @@
+\chapter{Optimized Denoising Algorithms}
+\label{ch:algorithms}
+
+This chapter develops the mathematical foundations of the \projectshort{} denoising library. We first formulate single-channel enhancement in the STFT domain, analyze the limitations of fixed-parameter spectral subtraction, and derive the enhanced OM-LSA/MCRA core implemented in \texttt{base\_omlsa\_mcra.py}. We then present six specialized front-end modules and explain why \emph{chainable mixed-algorithm processing}---composition of physics-matched stages followed by a unified OM-LSA back-end---outperforms any single fixed method across heterogeneous noise.
+
+\section{Problem Formulation in the STFT Domain}
+\label{sec:stft_formulation}
+
+\subsection{Additive Mixture Model}
+
+The noisy observation is modeled as
+\begin{equation}
+  y(n) = s(n) + d(n), \quad n = 0,\ldots,N-1,
+  \label{eq:time_mix}
+\end{equation}
+where $s(n)$ is clean speech and $d(n)$ is interference. Speech enhancement seeks an estimate $\hat{s}(n)$ minimizing distortion subject to computational constraints.
+
+\subsection{Short-Time Fourier Analysis}
+
+With Hann window $w(n)$ of length $L=512$, hop $R=128$, and FFT size $L$, the STFT is
+\begin{equation}
+  Y(k,t) = \sum_{n=0}^{L-1} y(n+tR)\, w(n)\, e^{-j2\pi kn/L},
+  \label{eq:stft_def}
+\end{equation}
+where $k=0,\ldots,L/2$ is the frequency bin and $t$ the frame index. Under the common quasi-stationarity assumption within each frame,
+\begin{equation}
+  Y(k,t) = S(k,t) + D(k,t).
+  \label{eq:stft_mix}
+\end{equation}
+Enhancement applies a complex gain $\hat{S}(k,t)=G(k,t)\,Y(k,t)$ and synthesizes $\hat{s}(n)$ by overlap-add inverse STFT. With analysis window $w(n)$ and synthesis window $w_s(n)=w(n)$, the COLA reconstruction is
+\begin{equation}
+  \hat{s}(n) = \frac{\sum_{t\in\mathcal{T}(n)} w_s(n-tR)\, \mathcal{F}^{-1}_L\{\hat{Y}(\cdot,t)\}(n)}
+               {\sum_{t\in\mathcal{T}(n)} w_s^2(n-tR) + \varepsilon},
+  \label{eq:ola}
+\end{equation}
+where $\mathcal{F}^{-1}_L\{\cdot\}$ denotes length-$L$ inverse FFT of one-sided bins and $\mathcal{T}(n)=\{t:\,0\le n-tR<L\}$. Project defaults: $L=\texttt{STFT\_NFFT}=512$, $R=\texttt{STFT\_HOP}=128$, Hann window (\texttt{common.py}).
+
+\subsection{Notation and Local SNR}
+
+Instantaneous spectral power and phase are
+\begin{align}
+  P(k,t) &= |Y(k,t)|^2, \qquad \phi(k,t) = \angle Y(k,t), \\
+  \gamma(k,t) &= \frac{P(k,t)}{\mathbb{E}[|D(k,t)|^2] + \varepsilon}, \qquad
+  \xi(k,t) = \frac{\mathbb{E}[|S(k,t)|^2]}{\mathbb{E}[|D(k,t)|^2] + \varepsilon},
+\end{align}
+where $\gamma$ is the \emph{a posteriori} SNR and $\xi$ the \emph{a priori} SNR. Under the distortionless constraint, the MMSE magnitude estimator takes the form $\hat{S}=G(\xi,\gamma)\,Y$ with $0\le G\le 1$.
+
+\begin{table}[H]
+  \centering
+  \caption{Implementation constants for STFT and OM-LSA/MCRA (\texttt{base\_omlsa\_mcra.py}).}
+  \label{tab:omlsa_constants}
+  \begin{tabular}{lcl}
+    \toprule
+    \textbf{Symbol} & \textbf{Value} & \textbf{Role} \\
+    \midrule
+    $L$, $R$           & 512, 128   & FFT size, hop (75\% overlap) \\
+    $\alpha_p$         & 0.8        & Power smoothing for MCRA \\
+    $\alpha_{\mathrm{dd}}$ & 0.98   & Decision-directed SNR pole \\
+    $\alpha_{\mathrm{noise}}$ & 0.92 & Base noise PSD update \\
+    $|\mathcal{W}_t|$  & 30 frames  & Minimum-tracking window ($\approx 240$\,ms) \\
+    $T_0$ (init)       & 12 frames  & Initial noise PSD frames \\
+    $G_{\mathrm{floor}}$ & 0.06     & Minimum gain (soft floor) \\
+    $\varepsilon$      & $10^{-12}$ & Numerical floor \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Why Magnitude-Domain Processing}
+
+Human hearing is largely insensitive to phase for narrowband components at moderate SNR; speech intelligibility correlates strongly with short-time \emph{magnitude} envelope structure. The library therefore applies most gains to $|Y(k,t)|$ while retaining the noisy phase $\angle Y(k,t)$ unless a module explicitly modifies the complex spectrum (WPE, chirp cancellation).
+
+\section{Fixed Spectral Subtraction and Its Defects}
+\label{sec:fixed_sub_limit}
+
+\subsection{Classical Subtraction}
+
+Given noise magnitude estimate $|\hat{D}(k,t)|$, fixed spectral subtraction sets~\cite{boll1979}
+\begin{equation}
+  |\tilde{S}(k,t)| = \max\;\Bigl(|Y(k,t)| - \alpha|\hat{D}(k,t)|,\; \beta|Y(k,t)|\Bigr),
+  \label{eq:fixed_sub_ch5}
+\end{equation}
+with scalar $\alpha>1$ (over-subtraction) and floor $\beta\in(0,1)$. Equivalently, in power domain with gain $G=|\tilde{S}|/|Y|$,
+\begin{equation}
+  G_{\mathrm{sub}}(k,t) = \max\;\left(1 - \alpha\,\frac{\hat{N}(k,t)}{P(k,t)},\; \beta\right),
+  \label{eq:sub_gain}
+\end{equation}
+where $\hat{N}(k,t)\approx \mathbb{E}[|D(k,t)|^2]$. The estimator is \emph{linear in magnitude} and applies independently to each bin.
+
+\subsection{MMSE Benchmark: Wiener and STSA Gains}
+
+For comparison, the Wiener gain under Gaussian spectral coefficients is
+\begin{equation}
+  G_{\mathrm{W}}(\xi) = \frac{\xi}{1+\xi}.
+  \label{eq:wiener_gain}
+\end{equation}
+The MMSE short-time spectral amplitude (STSA) gain under speech presence hypothesis $H_1$ is~\cite{ephraim1984}
+\begin{equation}
+  G_{\mathrm{H1}}(\xi,\gamma) = \frac{\xi}{1+\xi}\,\Gamma(0.5)\,\exp\;\Bigl(-\frac{v}{2}\Bigr)\,
+  \Bigl[(1+v)I_0\;\Bigl(\frac{v}{2}\Bigr) + v I_1\;\Bigl(\frac{v}{2}\Bigr)\Bigr],
+  \label{eq:stsa_gain}
+\end{equation}
+with $v=\gamma\xi/(1+\xi)$ and modified Bessel functions $I_0,I_1$. OM-LSA replaces \eqref{eq:stsa_gain} by a log-amplitude approximation using the exponential integral $E_1(\cdot)$ (Section~\ref{sec:omlsa_mcra}), yielding smoother low-SNR behavior than \eqref{eq:sub_gain}.
+
+\begin{proposition}[Variance inflation under independent bin subtraction]
+\label{prop:musical_noise}
+Assume that for a noise-only frame, $|D(k,t)|$ estimates are unbiased and mutually independent across $k$, and subtraction uses a constant $\alpha$. Then the residual magnitude variance $\mathrm{Var}(|\tilde{S}|)$ at bins where $|Y|\approx|\hat{D}|$ scales with the number of independent deep nulls, producing sparse high-variance peaks in time--frequency space (musical noise).
+\end{proposition}
+
+\begin{proof}[Sketch]
+When $|Y(k,t)|\approx \mathbb{E}|D(k,t)|$, subtraction yields a small positive mean residual but large relative variance because independent estimation errors do not cancel across bins. The ear integrates adjacent frequency channels; isolated random peaks are perceived as tonal artifacts. Scene01 baseline residual kurtosis $4.38$ (\chapref{ch:scene}) quantifies this heavy-tailed residual in practice.
+\end{proof}
+
+\subsection{Proposition: Scalar $(\alpha,\beta)$ Cannot Track Local SNR}
+
+\begin{proposition}[Inadequacy of global over-subtraction]
+\label{prop:scalar_alpha}
+Let $\gamma(k,t)=|Y(k,t)|^2/\mathbb{E}[|D(k,t)|^2]$ be the local a posteriori SNR. A single pair $(\alpha,\beta)$ in \eqref{eq:fixed_sub_ch5} is optimal only if $\gamma(k,t)\equiv \gamma_0$ is constant over all $(k,t)$. For any scene with $\exists (k_1,t_1),(k_2,t_2)$ such that $\gamma(k_1,t_1)\gg \gamma(k_2,t_2)$, either speech at $(k_1,t_1)$ is over-attenuated or noise at $(k_2,t_2)$ is under-suppressed.
+\end{proposition}
+
+\begin{proof}
+At high $\gamma$, MMSE-optimal gain approaches unity; at low $\gamma$, optimal gain approaches zero. A scalar $\alpha$ selects one compromise slope for all bins. Scene01 exhibits mid-band SNR 18.8\,dB but high-band SNR 1.5\,dB; scene02 high-band SNR is $-8.5$\,dB with 89.7\% of local SNR bins below 0\,dB (\chapref{ch:scene}). No single $(\alpha,\beta)$ can simultaneously protect mid-band vowels and suppress high-band noise.
+\end{proof}
+
+These propositions motivate \emph{adaptive, bin-wise, speech-presence-aware} gains---the design principle of OM-LSA/MCRA and the ANASS framework (\chapref{ch:scene}).
+
+\section{Enhanced OM-LSA/MCRA Core}
+\label{sec:omlsa_mcra}
+
+The module \texttt{enhance\_spectrum\_omlsa\_mcra} implements a unified pipeline combining (i) MCRA-style noise tracking, (ii) decision-directed a priori SNR estimation, (iii) OM-LSA MMSE log-amplitude gains, and (iv) soft speech-presence blending.
+
+\subsection{Derivation Sketch: From MMSE-STSA to OM-LSA}
+
+Under complex Gaussian models for $S(k,t)$ and $D(k,t)$, the minimum mean-square error estimator of $|S|$ given $|Y|$ under hypothesis $H_1$ (speech present) leads to \eqref{eq:stsa_gain}. Ephraim and Malah show that for low $v$, $G_{\mathrm{H1}}\to 0$ while for large $v$, $G_{\mathrm{H1}}\to \xi/(1+\xi)$. OM-LSA uses the approximation~\cite{ephraim2005}
+\begin{equation}
+  G_{\mathrm{H1}}^{\mathrm{OM}}(\xi,\gamma) \approx \frac{\xi}{1+\xi}\,
+  \exp\;\Bigl(\tfrac{1}{2}\,E_1(v)\Bigr), \quad v = \frac{\gamma\,\xi}{1+\xi},
+  \label{eq:omlsa_approx}
+\end{equation}
+where $E_1(x)=\int_x^{\infty} e^{-t}/t\,dt$. The implementation evaluates \eqref{eq:omlsa_approx} via \texttt{scipy.special.exp1} and clips:
+\begin{equation}
+  G_{\mathrm{H1}} = \mathrm{clip}\;\bigl(G_{\mathrm{H1}}^{\mathrm{OM}},\, G_{\mathrm{floor}},\, 1\bigr).
+  \label{eq:gh1_clip}
+\end{equation}
+
+\subsection{MMSE Log-Amplitude Gain (OM-LSA)}
+
+Under a Gaussian complex-spectral model with a priori SNR $\xi(k,t)$ and a posteriori SNR $\gamma(k,t)=|Y|^2/\mathbb{E}[|D|^2]$, the MMSE estimator of the clean magnitude corresponds to a gain~\cite{ephraim1984,ephraim2005}
+\begin{equation}
+  G_{\mathrm{H1}}(k,t) = \frac{\xi}{1+\xi}\exp\;\Bigl(\tfrac{1}{2}\,E_1(v)\Bigr), \quad
+  v = \frac{\gamma\,\xi}{1+\xi},
+  \label{eq:omlsa_gain}
+\end{equation}
+where $E_1(\cdot)$ is the exponential integral. Compared to \eqref{eq:fixed_sub_ch5}, $G_{\mathrm{H1}}$ is a \emph{smooth nonlinear function} of $(\xi,\gamma)$: it approaches $1$ when $\xi\gg 1$ and approaches a frequency-dependent floor when $\xi\to 0$, avoiding hard bin-wise clipping.
+
+\begin{remark}[Advantage over subtraction]
+Fixed subtraction applies a linear rule in magnitude; OM-LSA applies a Bayesian shrinkage rule derived from minimum mean-square error estimation. For the same noise PSD estimate, OM-LSA uniformly reduces over-suppression of weak speech components because the gain curve is concave in $\sqrt{\gamma}$ near the origin~\cite{loizou2013}.
+\end{remark}
+
+\subsection{Decision-Directed Prior SNR}
+
+Direct estimation $\xi=\max(\gamma-1,0)$ is high-variance at low SNR. The decision-directed (DD) update~\cite{ephraim2005} uses temporal coherence of speech:
+\begin{equation}
+  \xi(k,t) = \alpha_{\mathrm{dd}}\, G^2(k,t{-}1)\,\gamma(k,t{-}1)
+           + (1-\alpha_{\mathrm{dd}})\,\max\bigl(\gamma(k,t)-1,\, 0\bigr),
+  \label{eq:dd_prior_snr}
+\end{equation}
+with $\alpha_{\mathrm{dd}}=0.98$ in our implementation.
+
+\begin{proposition}[Gain-variance reduction via DD smoothing]
+\label{prop:dd_variance}
+Let $\gamma(k,t)=\gamma_0+\epsilon_t$ where $\epsilon_t$ is zero-mean frame noise with variance $\sigma^2$. For $\alpha_{\mathrm{dd}}$ close to 1, the variance of the DD estimate $\mathrm{Var}(\xi(k,t))$ is reduced by a factor of order $(1-\alpha_{\mathrm{dd}})^2$ relative to the instantaneous estimator $\max(\gamma-1,0)$, at the cost of a bias of order $\alpha_{\mathrm{dd}}$ times the previous-frame mismatch.
+\end{proposition}
+
+\begin{proof}[Sketch]
+Expand \eqref{eq:dd_prior_snr} as a first-order AR recursion in $\xi$. The innovation term $(1-\alpha_{\mathrm{dd}})\max(\gamma-1,0)$ injects variance $(1-\alpha_{\mathrm{dd}})^2\sigma^2$ per step while the pole at $\alpha_{\mathrm{dd}}$ low-pass filters rapid $\gamma$ fluctuations. Voiced speech maintains correlated $\gamma$ across frames; broadband noise does not, so DD preserves harmonic structure while stabilizing gains---consistent with voiced-frame autocorrelation peaks at lag 96 samples observed in scene analysis.
+\end{proof}
+
+\subsection{Speech Presence Probability and Soft Gating}
+
+Define
+\begin{equation}
+  v(k,t) = \frac{\gamma(k,t)\,\xi(k,t)}{1+\xi(k,t)}, \qquad
+  p_1(k,t) = \frac{1}{1+\exp\bigl(-(v(k,t)-1)\bigr)}.
+  \label{eq:speech_presence}
+\end{equation}
+When $v\gg 1$, speech is likely present ($p_1\to 1$); when $v\ll 1$, noise dominates ($p_1\to 0$).
+
+\begin{proposition}[Soft gating dominates hard VAD for mixed frames]
+\label{prop:soft_vad}
+Let a hard VAD declare ``speech'' iff $v>1$. For frames with $v\approx 1$ (ambiguous low-SNR consonants), hard VAD switches discretely between full noise update and no update, injecting discontinuities in $\hat{N}(k,t)$. Soft weight $p_1(v)$ is Lipschitz-continuous in $v$, bounding the per-frame change in noise PSD update magnitude by $|\partial \hat{N}/\partial p_1|<C$ for some constant $C$ depending on $(P,P_{\min})$.
+\end{proposition}
+
+\begin{proof}
+Hard VAD replaces $p_1$ with $\mathbb{1}[v>1]$, a discontinuous function. Soft logistic $p_1$ has bounded derivative $|dp_1/dv|\le 1/4$. Since noise update \eqref{eq:noise_update} is affine in $p_0=1-p_1$, gain trajectories are smooth across ambiguous bins---critical when energy Cohen's $d$ falls to 0.24 (scene02) and energy alone cannot gate reliably.
+\end{proof}
+
+\subsection{MCRA-Style Adaptive Noise Tracking}
+
+Let $P(k,t)=|Y(k,t)|^2$. Smoothed power and sliding minimum are
+\begin{align}
+  \bar{P}(k,t) &= \alpha_p \bar{P}(k,t{-}1) + (1-\alpha_p) P(k,t), \\
+  P_{\min}(k,t) &= \min_{i\in\mathcal{W}_t} \bar{P}(k,i),
+\end{align}
+with $\alpha_p=0.8$ and window length $|\mathcal{W}_t|=30$ frames ($\approx 240$\,ms at hop 128, 16\,kHz).
+
+The noise PSD update is
+\begin{equation}
+  \alpha_t(k) = \alpha_{\mathrm{noise}} + 0.06\, p_1(k,t), \quad \alpha_{\mathrm{noise}}=0.92,
+  \label{eq:adaptive_alpha}
+\end{equation}
+\begin{equation}
+  \hat{N}(k,t) = \alpha_t(k)\,\hat{N}(k,t{-}1)
+               + \bigl(1-\alpha_t(k)\bigr)\,\bigl(p_0(k,t)\,P(k,t) + (1-p_0(k,t))\,P_{\min}(k,t)\bigr),
+  \label{eq:noise_update}
+\end{equation}
+where $p_0=1-p_1$. The logistic form is a soft surrogate for the speech-presence probability derived from the generalized likelihood ratio in MMSE estimators; the slope at $v=1$ is $1/4$.
+
+Initial noise PSD uses the temporal average of the first $T_0=\min(12,T)$ frames:
+\begin{equation}
+  \hat{N}(k,0) = \frac{1}{T_0}\sum_{t=0}^{T_0-1} P(k,t).
+  \label{eq:noise_init}
+\end{equation}
+
+\begin{proposition}[MCRA minimum tracking under non-stationary noise]
+\label{prop:mcra}
+Suppose that along each frequency bin $k$, there exists at least one frame in every window $\mathcal{W}_t$ where speech power is negligible (silence or noise-only). Then $P_{\min}(k,t)$ is a lower envelope of smoothed power and satisfies $\mathbb{E}[P_{\min}(k,t)] \le \mathbb{E}[|D(k,t)|^2] + \delta$, with bias $\delta$ controlled by window length and $\alpha_p$. Updating $\hat{N}$ toward $P_{\min}$ in noise-dominated bins ($p_0\approx 1$) prevents speech leakage into the noise estimate.
+\end{proposition}
+
+\begin{proof}[Sketch]
+MCRA~\cite{loizou2013} tracks the minimum of smoothed power because noise-only minima occur during pauses; speech raises the envelope. Weighting by $p_0$ reduces update toward $P$ when $p_1$ is high (speech present) and toward $P_{\min}$ when $p_1$ is low. Non-stationarity index $\approx 0.82$ on white-noise scenes (\chapref{ch:scene}) confirms time-varying noise level, validating recursive tracking over a single static $\hat{N}$.
+\end{proof}
+
+\subsection{Soft Gain-Floor Blending}
+
+OM-LSA gain $G_{\mathrm{H1}}$ is blended with floor $G_{\mathrm{floor}}=0.06$:
+\begin{equation}
+  G(k,t) = G_{\mathrm{H1}}(k,t)^{p_1(k,t)} \cdot G_{\mathrm{floor}}^{\,1-p_1(k,t)}.
+  \label{eq:gain_blend}
+\end{equation}
+
+\begin{remark}[Physical interpretation]
+When $p_1\to 0$ (noise bin), $G\to G_{\mathrm{floor}}$, enforcing a minimum suppression depth equivalent to ANASS $\beta$ flooring (\chapref{ch:scene}). When $p_1\to 1$ (speech bin), $G\to G_{\mathrm{H1}}$, preserving MMSE speech restoration. This implements Module~3 musical-noise control without a separate post-filter: bins uncertain about speech receive intermediate gains, reducing bin-to-bin variance identified in Proposition~\ref{prop:musical_noise}.
+\end{remark}
+
+\begin{algorithm}[H]
+  \caption{Full OM-LSA/MCRA spectral enhancement (\texttt{enhance\_spectrum\_omlsa\_mcra})}
+  \label{alg:omlsa_mcra_full}
+  \begin{algorithmic}[1]
+    \Require Complex STFT $Y(k,t)$, $k=0\ldots K-1$, $t=0\ldots T-1$; constants Table~\ref{tab:omlsa_constants}
+    \Ensure Enhanced spectrum $\hat{Y}(k,t)=G(k,t)Y(k,t)$
+    \State $P(k,t) \gets |Y(k,t)|^2$
+    \State $T_0 \gets \min(12, T)$;\quad $\hat{N}(k,t) \gets \frac{1}{T_0}\sum_{\tau=0}^{T_0-1} P(k,\tau)$ for all $k,t$ \Comment{init broadcast}
+    \State Initialize circular buffer $\mathcal{B}(k,\cdot)$ of length 30 with $\bar{P}(k,0)$
+    \State $G(k,-1)\gets 1$;\quad $\gamma(k,-1)\gets 1$ for all $k$
+    \For{$t = 0$ \textbf{to} $T-1$}
+      \For{$k = 0$ \textbf{to} $K-1$}
+        \State $\bar{P}(k,t) \gets \alpha_p \bar{P}(k,t{-}1) + (1-\alpha_p) P(k,t)$
+        \State Push $\bar{P}(k,t)$ into $\mathcal{B}$;\quad $P_{\min}(k,t) \gets \min \mathcal{B}(k,\cdot)$
+      \EndFor
+      \For{$k = 0$ \textbf{to} $K-1$}
+        \State $\gamma(k,t) \gets P(k,t) / (\hat{N}(k,t{-}1) + \varepsilon)$
+        \If{$t=0$}
+          \State $\xi(k,t) \gets \max(\gamma(k,t)-1,\, 0)$
+        \Else
+          \State $\xi(k,t) \gets \alpha_{\mathrm{dd}} G^2(k,t{-}1)\gamma(k,t{-}1) + (1-\alpha_{\mathrm{dd}})\max(\gamma(k,t)-1,0)$
+        \EndIf
+        \State $v \gets \gamma\xi/(1+\xi)$;\quad $p_1 \gets 1/(1+\exp(-(v-1)))$;\quad $p_0 \gets 1-p_1$
+        \State $\alpha_t \gets \alpha_{\mathrm{noise}} + 0.06\, p_1$
+        \State $\hat{N}(k,t) \gets \alpha_t \hat{N}(k,t{-}1) + (1-\alpha_t)(p_0 P + (1-p_0)P_{\min})$
+        \State $\gamma(k,t) \gets P(k,t)/(\hat{N}(k,t)+\varepsilon)$
+        \State $G_{\mathrm{H1}} \gets \frac{\xi}{1+\xi}\exp(0.5\,E_1(v))$;\quad clip to $[G_{\mathrm{floor}},1]$
+        \State $G(k,t) \gets G_{\mathrm{H1}}^{p_1} \cdot G_{\mathrm{floor}}^{(1-p_1)}$
+      \EndFor
+      \State $\hat{Y}(:,t) \gets G(:,t) \odot Y(:,t)$
+    \EndFor
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Time-domain wrapper \texttt{base\_omlsa\_mcra.process}}
+  \label{alg:omlsa_process}
+  \begin{algorithmic}[1]
+    \Require Noisy waveform $y(n)$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $Y \gets \mathrm{STFT}(y)$ \Comment{$L=512$, $R=128$, Hann}
+    \State $\hat{Y} \gets \textsc{EnhanceSpectrumOMLSAMCRA}(Y)$
+    \State $\hat{s} \gets \mathrm{iSTFT}(\hat{Y})$ \Comment{Eq.~\eqref{eq:ola}}
+    \State \Return $\hat{s}$
+  \end{algorithmic}
+\end{algorithm}
+
+\section{Physics-Matched Front-End Modules}
+\label{sec:modules}
+
+Table~\ref{tab:modules} summarizes six front-end modules. Each targets a distinct physical interference model; all except \texttt{kalman\_ar} (time-domain) operate primarily in STFT or frequency domain before OM-LSA refinement.
+
+\begin{table}[H]
+  \centering
+  \caption{Denoising modules and physical interference models.}
+  \label{tab:modules}
+  \begin{tabularx}{\textwidth}{l X l}
+    \toprule
+    \textbf{Module} & \textbf{Mathematical mechanism} & \textbf{Physical scenario} \\
+    \midrule
+    \texttt{base\_omlsa\_mcra}     & OM-LSA + MCRA (Section~\ref{sec:omlsa_mcra}) & Broadband stationary noise \\
+    \texttt{wpe\_omlsa}            & WPE dereverberation + OM-LSA & Late reverberation + hiss \\
+    \texttt{adaptive\_notch\_bank} & IIR notch bank + OM-LSA & Tonal hum / fan harmonics \\
+    \texttt{subspace\_denoise}     & SVD subspace projection + OM-LSA & Low-rank colored noise / hiss \\
+    \texttt{kalman\_ar}            & AR state-space Kalman + OM-LSA & Low local SNR, speech-like noise \\
+    \texttt{nmf\_denoise}          & Semi-supervised NMF + OM-LSA & Mixed noise templates \\
+    \texttt{chirp\_notch}          & Ridge tracking + cancellation + OM-LSA & Sweeping narrowband chirp \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Single-Channel WPE + OMLSA (\texttt{wpe\_omlsa})}
+
+\paragraph{Physical model.}
+Reverberation convolves speech with room impulse response $h(\tau)$:
+\begin{equation}
+  y(n) = s(n) + (h * s)(n) + d(n),
+\end{equation}
+creating spectral coloration and temporal smearing. Weighted Prediction Error (WPE) models late reverberation as predictable from delayed copies of the same STFT bin~\cite{loizou2013}.
+
+\paragraph{Mathematics.}
+For each frequency bin $f$, let $y(t)=Y(f,t)$. Late reverberation at frame $t$ is modeled as a linear combination of delayed spectra at the same bin:
+\begin{equation}
+  y(t) \approx \sum_{k=0}^{K-1} g_k\, y(t-\delta-k-1) + s(t),
+  \label{eq:wpe_model}
+\end{equation}
+with $K=8$ prediction taps and delay $\delta=3$ frames. Define the start index $t_0=\delta+K$ and, for each valid $t\ge t_0$, the prediction matrix
+\begin{equation}
+  Z_t = \begin{bmatrix}
+    y(t-\delta-1) \\ y(t-\delta-2) \\ \vdots \\ y(t-\delta-K)
+  \end{bmatrix} \in \mathbb{C}^{K\times 1}.
+  \label{eq:wpe_Z}
+\end{equation}
+Stacking $T'=T-t_0$ columns yields $Z\in\mathbb{C}^{K\times T'}$ and target vector $\mathbf{y}=[y(t_0),\ldots,y(T-1)]^T$. Diagonal WPE~\cite{loizou2013} weights each frame by inverse power $\lambda_t^{-1}=1/\max(|y(t)|^2,\varepsilon)$, giving the weighted normal equations
+\begin{align}
+  R_f &= \sum_{t=t_0}^{T-1} \lambda_t^{-1}\, Z_t Z_t^H
+       = (Z \odot \lambda^{-1/2}) (Z \odot \lambda^{-1/2})^H, \\
+  \mathbf{p}_f &= \sum_{t=t_0}^{T-1} \lambda_t^{-1}\, Z_t y^*(t)
+              = (Z \odot \lambda^{-1/2}) (\mathbf{y} \odot \lambda^{-1/2})^*, \\
+  \mathbf{g}_f &= (R_f + \varepsilon I_K)^{-1} \mathbf{p}_f.
+  \label{eq:wpe_normal}
+\end{align}
+The late-reverberation estimate and dereverberated spectrum are
+\begin{equation}
+  \hat{L}(f,t) = \mathbf{g}_f^H Z_t, \qquad
+  Y^{\mathrm{wpe}}(f,t) = y(t) - \hat{L}(f,t), \quad t\ge t_0.
+  \label{eq:wpe_subtract}
+\end{equation}
+Two outer iterations re-estimate $\mathbf{g}_f$ on the updated $Y^{\mathrm{wpe}}$, refining $\lambda_t$ as power decreases.
+
+\paragraph{Why chain with OM-LSA.}
+WPE removes \emph{predictable} spectral components (reflections) but not unpredictable broadband hiss. Denoting WPE output $Y^{\mathrm{wpe}}$, applying OM-LSA estimates $\hat{S}$ from remaining noise:
+\begin{equation}
+  \hat{S} = G_{\mathrm{OMLSA}}\bigl(|Y^{\mathrm{wpe}}|, \hat{N}\bigr)\, e^{j\angle Y^{\mathrm{wpe}}}.
+\end{equation}
+This separation-of-concerns is optimal when interference splits into predictable (low-rank in time) plus stochastic residual---matching scene15 (reverb + hiss).
+
+\begin{algorithm}[H]
+  \caption{Single-channel WPE in STFT domain (\texttt{single\_channel\_wpe})}
+  \label{alg:wpe}
+  \begin{algorithmic}[1]
+    \Require Complex STFT $Y(f,t)$, taps $K=8$, delay $\delta=3$, iterations $I=2$
+    \Ensure Dereverberated STFT $Y^{\mathrm{wpe}}$
+    \State $Y^{\mathrm{wpe}} \gets Y$
+    \For{$i = 1$ \textbf{to} $I$}
+      \For{$f = 0$ \textbf{to} $F-1$}
+        \State $y \gets Y^{\mathrm{wpe}}(f,:)$;\quad $t_0 \gets \delta + K$
+        \If{$T \le t_0 + 2$} \textbf{continue} \EndIf
+        \State Build $Z\in\mathbb{C}^{K\times(T-t_0)}$ with $Z[k,\tau]=y(t_0+\tau-\delta-k-1]$
+        \State $\mathbf{y} \gets y[t_0:T-1]$;\quad $\lambda_\tau \gets \max(|y(t_0+\tau)|^2,\varepsilon)$
+        \State $R \gets Z \mathrm{diag}(\lambda^{-1}) Z^H$;\quad $\mathbf{p} \gets Z \mathrm{diag}(\lambda^{-1}) \mathbf{y}^*$
+        \State $\mathbf{g} \gets \mathrm{solve}(R + \varepsilon I_K,\, \mathbf{p})$ \Comment{fallback: pseudo-inverse}
+        \State $\hat{L}(\tau) \gets \mathbf{g}^H Z(:,\tau)$ for all $\tau$
+        \State $Y^{\mathrm{wpe}}(f,t_0:T-1) \gets \mathbf{y} - \hat{L}$
+      \EndFor
+    \EndFor
+    \State \Return $Y^{\mathrm{wpe}}$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{WPE + OM-LSA pipeline (\texttt{wpe\_omlsa.process})}
+  \label{alg:wpe_omlsa}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $Y \gets \mathrm{STFT}(y)$
+    \State $Y^{\mathrm{wpe}} \gets \textsc{SingleChannelWPE}(Y)$
+    \State $\hat{Y} \gets \textsc{EnhanceSpectrumOMLSAMCRA}(Y^{\mathrm{wpe}})$
+    \State \Return $\mathrm{iSTFT}(\hat{Y})$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Adaptive Notch Bank (\texttt{adaptive\_notch\_bank})}
+
+\paragraph{Physical model.}
+Power-line hum and fan noise are \emph{narrowband quasi-periodic} tones at $f_0$ and harmonics $hf_0$.
+
+\paragraph{Peak detection.}
+Welch PSD $\hat{P}_{\mathrm{welch}}(f)$ with segment length 2048 estimates short-time power. A bin $f_i$ is a tonal peak if it is a local maximum in a 5-point neighborhood and its prominence exceeds 6\,dB:
+\begin{equation}
+  \mathrm{prom}(f_i) = 10\log_{10}\hat{P}(f_i) - \mathrm{median}\bigl\{10\log_{10}\hat{P}(f_j)\bigr\}_{j\in[i-2,i+2]} > 6\,\mathrm{dB},
+  \label{eq:peak_prom}
+\end{equation}
+subject to $40\,\mathrm{Hz} \le f_i \le \min(0.48 f_s,\, 7800\,\mathrm{Hz})$. Up to eight peaks are retained. Prior harmonics of 50 and 60\,Hz are injected at $hf_0$ for $h=1,\ldots,4$ because grid/fan frequencies are known \emph{a priori}. Nearby peaks within 8\,Hz are merged:
+\begin{equation}
+  \mathcal{F}_{\mathrm{notch}} = \mathrm{MergeWithin}(\mathcal{F}_{\mathrm{peaks}} \cup \{50h, 60h\},\, 8\,\mathrm{Hz}).
+\end{equation}
+
+\paragraph{Notch filtering.}
+Each peak $f_0\in\mathcal{F}_{\mathrm{notch}}$ uses a second-order IIR notch with normalized frequency $\omega_0 = 2\pi f_0/f_s$ and quality factor $Q=35$ (below 500\,Hz) or $Q=50$ (above), applied via zero-phase \texttt{filtfilt}:
+\begin{equation}
+  H(z) = \frac{1 - 2\cos\omega_0\, z^{-1} + z^{-2}}{1 - 2r\cos\omega_0\, z^{-1} + r^2 z^{-2}}, \quad r \approx 1 - \frac{\omega_0}{2Q}.
+  \label{eq:notch_tf}
+\end{equation}
+Cascading notches yields overall transfer $H_{\mathrm{bank}}(z)=\prod_{f_0} H_{f_0}(z)$. Zero-phase filtering applies $H$ forward and backward, squaring magnitude response $|H_{\mathrm{bank}}(e^{j\omega})|^2$ at each tone.
+
+\begin{proposition}[Harmonic energy reduction]
+\label{prop:notch}
+For a pure tone $A\cos(2\pi f_0 n)$ at bin $f_0$, an ideal notch of width $\Delta f$ attenuates energy in $|f-f_0|<\Delta f/2$ by at least $20\log_{10}(1/\epsilon)$ dB where $\epsilon$ is passband ripple. Cascaded notches at $\{hf_0\}_{h=1}^4$ remove fundamental and low harmonics that broadband OM-LSA treats inefficiently (narrow peaks spread energy across adjacent bins via sidelobe leakage).
+\end{proposition}
+
+OM-LSA post-processing removes broadband residual after tonal energy is physically removed---essential for hum50/hum60/fan scenes where tonal SNR dominates.
+
+\begin{algorithm}[H]
+  \caption{Adaptive notch bank + OM-LSA (\texttt{adaptive\_notch\_bank})}
+  \label{alg:notch_bank}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $\hat{P}(f) \gets \mathrm{Welch}(y,\, n_{\mathrm{seg}}=2048)$
+    \State $\mathcal{P} \gets \emptyset$
+    \For{each local maximum $f_i$ in $\hat{P}$}
+      \If{$\mathrm{prom}(f_i)>6$\,dB and $40\le f_i\le 0.48 f_s$}
+        \State $\mathcal{P} \gets \mathcal{P} \cup \{f_i\}$
+      \EndIf
+    \EndFor
+    \State Keep top 8 peaks in $\mathcal{P}$ by prominence
+    \State $\mathcal{F} \gets \mathcal{P} \cup \{50h, 60h\}_{h=1..4}$
+    \State $\mathcal{F} \gets \mathrm{MergeWithin}(\mathcal{F},\, 8\,\mathrm{Hz})$
+    \State $y' \gets y$
+    \For{each $f_0 \in \mathcal{F}$}
+      \State $Q \gets 35$ if $f_0<500$\,Hz else $50$
+      \State $(b,a) \gets \mathrm{iirnotch}(\omega_0=2f_0/f_s,\, Q)$
+      \State $y' \gets \mathrm{filtfilt}(b,a,\, y')$ \Comment{zero-phase; Eq.~\eqref{eq:notch_tf}}
+    \EndFor
+    \State \Return $\textsc{OMLSAProcess}(y')$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Subspace Denoising (\texttt{subspace\_denoise})}
+
+\paragraph{Physical model.}
+Colored noise with low-dimensional spectral structure (hiss concentrated in a subspace spanned by initial frames) occupies a rank-$r$ subspace of magnitude spectrograms.
+
+\paragraph{Mathematics.}
+Stack initial $n_0=\min(16,T)$ magnitude frames as matrix $N\in\mathbb{R}^{F\times n_0}$. Thin SVD yields $N = U\Sigma V^T$ with singular values $\sigma_1\ge\cdots\ge\sigma_r$. Noise rank is chosen by cumulative energy:
+\begin{equation}
+  r = \min\Bigl\{j:\; \frac{\sum_{i=1}^{j}\sigma_i^2}{\sum_{i}\sigma_i^2 + \varepsilon} \ge 0.9\Bigr\}, \quad r \le \min(6,\, \mathrm{rank}(N)).
+  \label{eq:subspace_rank}
+\end{equation}
+Noise subspace basis $U_n = U[:,1:r]$. For full mixture magnitude $M(k,t)=|Y(k,t)|$, orthogonal projection onto the noise subspace and residual are
+\begin{align}
+  M_n(k,t) &= \sum_{j=1}^{r} \bigl(U_n^T M(:,t)\bigr)_j\, U_n(k,j) = (U_n U_n^T M)(k,t), \\
+  M_c(k,t) &= \max\bigl(M(k,t) - M_n(k,t),\, 0\bigr), \\
+  G_{\mathrm{sub}}(k,t) &= \mathrm{clip}\;\Bigl(\frac{M_c(k,t)}{M(k,t)+\varepsilon},\, 0.06,\, 1\Bigr).
+  \label{eq:subspace_gain}
+\end{align}
+The complex spectrum is preconditioned as $S_0 = G_{\mathrm{sub}}\odot M \odot e^{j\angle Y}$, then passed to OM-LSA for residual broadband suppression.
+
+\begin{proposition}[Subspace projection error bound]
+\label{prop:subspace}
+If speech magnitude $S$ lies approximately in subspace orthogonal to $\mathrm{span}(U_n)$ during noise-dominant initialization, then $\|M_n\|_F \approx \|D\|_F$ and $\|M-M_n\|_F \ge \|S\|_F - \epsilon$. When speech subspace overlaps $U_n$ (speech during init), bias $\epsilon$ increases; hence $n_0$ frames are chosen from mixture onset where pauses are likely. High-frequency hiss (scene07) and chirp pre-processing benefit from reducing structured noise rank before OM-LSA.
+\end{proposition}
+
+\begin{algorithm}[H]
+  \caption{Subspace projection + OM-LSA (\texttt{subspace\_denoise})}
+  \label{alg:subspace}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $Y \gets \mathrm{STFT}(y)$;\quad $M \gets |Y|$;\quad $\Phi \gets e^{j\angle Y}$
+    \State $N \gets M(:, 0:n_0-1)$ with $n_0=\min(16,T)$
+    \State $U,\Sigma,V^T \gets \mathrm{SVD}(N)$
+    \State $r \gets \mathrm{RankByEnergy}(\Sigma,\, 0.9)$ clipped to $[1,\min(6,\mathrm{rank})]$ \Comment{Eq.~\eqref{eq:subspace_rank}}
+    \State $U_n \gets U(:,1:r)$
+    \State $M_n \gets U_n (U_n^T M)$;\quad $M_c \gets \max(M - M_n, 0)$
+    \State $G \gets \mathrm{clip}(M_c/(M+\varepsilon),\, 0.06,\, 1)$
+    \State $S_0 \gets G \odot M \odot \Phi$
+    \State $\hat{Y} \gets \textsc{EnhanceSpectrumOMLSAMCRA}(S_0)$
+    \State \Return $\mathrm{iSTFT}(\hat{Y})$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Kalman--AR Filtering (\texttt{kalman\_ar})}
+
+\paragraph{Physical model.}
+Voiced speech is strongly predictable by linear prediction; babble and low-SNR noise are less predictable by low-order AR models.
+
+\paragraph{Yule--Walker AR($p$).}
+Sample autocorrelation $r(\ell)=\sum_n y(n)y(n+\ell)$ yields Toeplitz system for AR coefficients $\mathbf{a}=[a_1,\ldots,a_p]^T$ with order $p=10$:
+\begin{equation}
+  \sum_{k=1}^{p} a_k\, r(|i-k|) = r(i+1), \quad i=0,\ldots,p-1
+  \quad \Leftrightarrow \quad R\mathbf{a}=\mathbf{r},
+  \label{eq:yule_walker}
+\end{equation}
+where $R_{ij}=r(|i-j|)$ and $r_i=r(i+1)$. Tikhonov regularization $R+\varepsilon I$ stabilizes ill-conditioned segments.
+
+\paragraph{State-space model.}
+State $\mathbf{x}_k = [s_k, s_{k-1},\ldots,s_{k-p+1}]^T$ evolves as
+\begin{equation}
+  \mathbf{x}_{k+1} = F\mathbf{x}_k + \mathbf{w}_k, \quad y_k = H\mathbf{x}_k + v_k,
+  \label{eq:kalman_ss}
+\end{equation}
+with companion matrix
+\begin{equation}
+  F = \begin{bmatrix}
+    a_1 & a_2 & \cdots & a_p \\
+    1   & 0   & \cdots & 0 \\
+    0   & 1   & \ddots & \vdots \\
+    0   & 0   & \cdots & 0
+  \end{bmatrix}, \quad H=[1,0,\ldots,0],
+\end{equation}
+process noise $\mathbf{w}_k\sim\mathcal{N}(0,Q)$ with $Q=\sigma_p^2 I_p$, $\sigma_p^2=0.2\,\hat{\sigma}_y^2$, and observation noise $v_k\sim\mathcal{N}(0,R)$, $R=\hat{\sigma}_y^2$, where $\hat{\sigma}_y^2=\mathrm{Var}(y[0:2000])$.
+
+\paragraph{Kalman recursion.}
+At each sample $k$, predict then update:
+\begin{align}
+  \hat{\mathbf{x}}_{k|k-1} &= F\hat{\mathbf{x}}_{k-1|k-1}, &
+  P_{k|k-1} &= F P_{k-1|k-1} F^T + Q, \\
+  K_k &= P_{k|k-1} H^T (H P_{k|k-1} H^T + R)^{-1}, \\
+  \hat{\mathbf{x}}_{k|k} &= \hat{\mathbf{x}}_{k|k-1} + K_k (y_k - H\hat{\mathbf{x}}_{k|k-1}), &
+  P_{k|k} &= (I - K_k H) P_{k|k-1}.
+  \label{eq:kalman_update}
+\end{align}
+The filtered speech estimate is $\hat{s}_k = (\hat{\mathbf{x}}_{k|k})_1$.
+
+\begin{proposition}[MMSE linear prediction advantage at low SNR]
+\label{prop:kalman}
+When $s_k$ is AR($p$)-predictable and $d_k$ is white with variance $\sigma_d^2$, the Kalman smoother attenuates components of $y_k$ uncorrelated with the AR subspace. For local SNR $\ll 0$\,dB (89.7\% bins in scene02), linear MMSE estimation reduces noise variance before nonlinear OM-LSA, improving effective $\gamma(k,t)$ in subsequent STFT processing.
+\end{proposition}
+
+\begin{algorithm}[H]
+  \caption{Kalman--AR filter + OM-LSA (\texttt{kalman\_ar})}
+  \label{alg:kalman_ar}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, AR order $p=10$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $\mathbf{a} \gets \mathrm{YuleWalkerAR}(y,\, p)$ \Comment{solve \eqref{eq:yule_walker}}
+    \State Build $F,H$ from $\mathbf{a}$;\quad $\hat{\sigma}^2 \gets \mathrm{Var}(y[0:2000])$
+    \State $Q \gets 0.2\hat{\sigma}^2 I_p$;\quad $R \gets \hat{\sigma}^2$
+    \State $\hat{\mathbf{x}} \gets \mathbf{0}$;\quad $P \gets I_p$
+    \For{$k = 0$ \textbf{to} $N-1$}
+      \State $\hat{\mathbf{x}}^- \gets F\hat{\mathbf{x}}$;\quad $P^- \gets F P F^T + Q$
+      \State $K \gets P^- H^T (H P^- H^T + R)^{-1}$ \Comment{\eqref{eq:kalman_update}}
+      \State $\hat{\mathbf{x}} \gets \hat{\mathbf{x}}^- + K(y_k - H\hat{\mathbf{x}}^-)$
+      \State $P \gets (I - K H) P^-$;\quad $\hat{s}_k \gets \hat{x}_1$
+    \EndFor
+    \State \Return $\textsc{OMLSAProcess}(\hat{s})$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{NMF Denoising (\texttt{nmf\_denoise})}
+
+\paragraph{Physical model.}
+Magnitude spectrograms are approximately low-rank non-negative matrices $V\approx WH$ with speech and noise bases.
+
+\paragraph{Mathematics.}
+Magnitude spectrogram $V\in\mathbb{R}^{F\times T}_+$ is approximated by non-negative matrix factorization $V\approx WH$ with $W\in\mathbb{R}^{F\times r}_+$, $H\in\mathbb{R}^{r\times T}_+$. We minimize KL divergence
+\begin{equation}
+  D_{\mathrm{KL}}(V\|WH) = \sum_{f,t}\Bigl(V_{ft}\log\frac{V_{ft}}{(WH)_{ft}} - V_{ft} + (WH)_{ft}\Bigr),
+  \label{eq:nmf_kl}
+\end{equation}
+via multiplicative updates (MU)~\cite{lee1999}:
+\begin{equation}
+  H \leftarrow H \odot \frac{W^T(V \oslash WH)}{W^T \mathbf{1} + \varepsilon}, \quad
+  W \leftarrow W \odot \frac{(V \oslash WH)H^T}{\mathbf{1}H^T + \varepsilon},
+  \label{eq:nmf_mu}
+\end{equation}
+where $\oslash$ denotes element-wise division and $\odot$ element-wise product. Columns of $W$ are column-normalized after each $W$-update.
+
+\paragraph{Semi-supervised template split.}
+From initial $n_0=\min(12,T)$ noise frames $V_n=V(:,0:n_0-1)$ and speech frames $V_s=V(:,n_0:)$, learn separate dictionaries:
+\begin{equation}
+  W_n\in\mathbb{R}^{F\times 4}_+ \text{ from } V_n \text{ (30 MU iters)}, \quad
+  W_s\in\mathbb{R}^{F\times 8}_+ \text{ from } V_s \text{ (40 MU iters)}.
+\end{equation}
+Concatenate $W=[W_s,\, W_n]\in\mathbb{R}^{F\times 12}_+$ and refine activations $H$ on the full $V$ for 60 iterations with $W$ fixed. Split $H=[H_s^T,H_n^T]^T$ and reconstruct
+\begin{equation}
+  V_s = W_s H_s, \quad V_n = W_n H_n, \quad
+  G(k,t) = \mathrm{clip}\;\Bigl(\frac{V_s}{V_s + V_n + \varepsilon},\, 0.05,\, 1\Bigr).
+  \label{eq:nmf_gain}
+\end{equation}
+Apply $S_0 = G\odot V \odot e^{j\angle Y}$ followed by OM-LSA.
+
+\begin{remark}
+NMF separates \emph{templates} (spectral shapes) from activations (time). After notch removal of tones, residual fan noise with stable spectral shape is well modeled by $W_n$, while speech uses $W_s$---motivating \texttt{adaptive\_notch\_bank} $\rightarrow$ \texttt{nmf\_denoise} chains.
+\end{remark}
+
+\begin{algorithm}[H]
+  \caption{Semi-supervised NMF + OM-LSA (\texttt{nmf\_denoise})}
+  \label{alg:nmf}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $Y \gets \mathrm{STFT}(y)$;\quad $V \gets |Y|$;\quad $\Phi \gets e^{j\angle Y}$
+    \State $n_0 \gets \min(12,T)$;\quad $V_n \gets V(:,0:n_0-1)$;\quad $V_s \gets V(:,n_0:)$ (or $V$ if $T\le n_0$)
+    \State $W_n \gets \mathrm{NMF\_MU}(V_n,\, r=4,\, \mathrm{iters}=30)$
+    \State $W_s \gets \mathrm{NMF\_MU}(V_s,\, r=8,\, \mathrm{iters}=40)$
+    \State $W \gets [W_s,\, W_n]$;\quad initialize $H\in\mathbb{R}^{12\times T}_+$
+    \For{$i=1$ \textbf{to} $60$} \Comment{fix $W$, update $H$ only}
+      \State $H \gets H \odot \dfrac{W^T(V \oslash WH)}{W^T\mathbf{1}+\varepsilon}$ \Comment{\eqref{eq:nmf_mu}}
+    \EndFor
+    \State $H_s \gets H[1:8,:]$;\quad $H_n \gets H[9:12,:]$
+    \State $V_s \gets W_s H_s$;\quad $V_n \gets W_n H_n$
+    \State $G \gets \mathrm{clip}(V_s/(V_s+V_n+\varepsilon),\, 0.05,\, 1)$
+    \State $S_0 \gets G \odot V \odot \Phi$
+    \State \Return $\mathrm{iSTFT}(\textsc{EnhanceSpectrumOMLSAMCRA}(S_0))$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Chirp Notch (\texttt{chirp\_notch})}
+
+\paragraph{Physical model.}
+Chirp interference is a narrowband component whose center frequency $f_c(t)$ sweeps in time, visible as a ridge in spectrograms (scene09).
+
+\paragraph{Ridge tracking.}
+Let $M(k,t)=|Y(k,t)|$ and $M_{\mathrm{dB}}=20\log_{10}(M+\varepsilon)$. Restrict search to high-band bins $\mathcal{K}=\{k: f_k\ge 700\,\mathrm{Hz}\}$. Per frame $t$, candidate ridge bin is
+\begin{equation}
+  k_c(t) = \arg\max_{k\in\mathcal{K}} M_{\mathrm{dB}}(k,t),
+\end{equation}
+with prominence $p(t)=M_{\mathrm{dB}}(k_c,t)-\mathrm{median}\{M_{\mathrm{dB}}(k,t)\}_{k\in\mathcal{K}}$. Spectral flatness in the band validates narrowband structure:
+\begin{equation}
+  \mathrm{SF}(t) = \frac{\exp\bigl(\frac{1}{|\mathcal{K}|}\sum_{k\in\mathcal{K}}\log M(k,t)\bigr)}{\frac{1}{|\mathcal{K}|}\sum_{k\in\mathcal{K}} M(k,t)}.
+  \label{eq:spec_flat}
+\end{equation}
+Acceptance requires $(p>10\,\mathrm{dB} \land \mathrm{SF}<0.18)$ below 1.5\,kHz, or $(p>8\,\mathrm{dB} \land \mathrm{SF}<0.25)$ above; large frame-to-frame jumps $|k_c(t)-k_c(t-1)|>10$ require $p>15$\,dB. Valid frames are linearly interpolated, then median-filtered (kernel 9) to obtain smooth track $\tilde{k}_c(t)$.
+
+\paragraph{Stage 1: complex-domain cancellation.}
+Gaussian weights $w_k=\exp\bigl(-\tfrac{1}{2}((k-k_c)/\sigma_k)^2\bigr)$ with $\sigma_k\in[1.4,2.2]$ depend on prominence. Cancellation strength $\beta\in[0.55,0.95]$ scales with $p(t)$. Frequency protection $p(f)<1$ below 1.8\,kHz preserves formants:
+\begin{equation}
+  Y'(k,t) = Y(k,t) - \beta(t)\, p(f_k)\, w_k(k-k_c(t))\, Y(k,t).
+  \label{eq:chirp_cancel}
+\end{equation}
+
+\paragraph{Stage 2--4: OM-LSA, Gaussian notch, inpainting.}
+OM-LSA is applied to $Y'$. A time-varying mask attenuates residual ridge energy:
+\begin{equation}
+  M_{\mathrm{notch}}(k,t) = \mathrm{clip}\;\Bigl(1 - 0.9\, d(t)\, e^{-\frac{1}{2}\left(\frac{k-k_c(t)}{\sigma_n(t)}\right)^2},\, 0.06,\, 1\Bigr),
+\end{equation}
+with depth $d(t)=\mathrm{clip}((p(t)-8)/12,\,0,1)$. Temporal smoothing applies $0.2\,M_{t-1}+0.6\,M_t+0.2\,M_{t+1}$. Finally, ridge magnitude is inpainted from medians of neighboring off-ridge bins:
+\begin{equation}
+  |\hat{Y}(k,t)| = \mathrm{median}\bigl\{M(k',t): k'\in [k_c-w,\, k_c+w]^c\bigr\}, \quad |k-k_c|\le w.
+  \label{eq:chirp_inpaint}
+\end{equation}
+
+\begin{proposition}[Why OM-LSA alone fails on chirp]
+\label{prop:chirp}
+OM-LSA assumes slowly varying noise PSD per bin. A chirp violates this: energy migrates across bins, so $\hat{N}(k,t)$ cannot track a moving ridge. Explicit ridge cancellation removes \emph{non-stationary narrowband} structure that violates MCRA assumptions, restoring validity of Proposition~\ref{prop:mcra} on the residual.
+\end{proposition}
+
+\begin{algorithm}[H]
+  \caption{Four-stage chirp suppression (\texttt{chirp\_notch})}
+  \label{alg:chirp}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, sample rate $f_s$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $Y \gets \mathrm{STFT}(y)$;\quad $\{f_k\} \gets$ frequency axis
+    \State $(k_c, p) \gets \textsc{DetectChirpTrack}(Y, f_k)$ \Comment{Eqs.~\eqref{eq:spec_flat}, prominence gates}
+    \State $Y_1 \gets \textsc{CancelChirpComponent}(Y, k_c, p)$ \Comment{Eq.~\eqref{eq:chirp_cancel}}
+    \State $Y_2 \gets \textsc{EnhanceSpectrumOMLSAMCRA}(Y_1)$
+    \State $Y_3 \gets \textsc{ApplyChirpNotchMask}(Y_2, k_c, p)$
+    \State $\hat{Y} \gets \textsc{InpaintRidgeMag}(Y_3, k_c, p)$ \Comment{Eq.~\eqref{eq:chirp_inpaint}}
+    \State \Return $\mathrm{iSTFT}(\hat{Y})$
+  \end{algorithmic}
+\end{algorithm}
+
+\section{Chainable Mixed-Algorithm Processing}
+\label{sec:chains}
+
+\subsection{Composition Operator}
+
+Let $\Phi_i$ denote the STFT-domain enhancement operator of stage $i$, so $\hat{Y}=\Phi_m\circ\cdots\circ\Phi_1(Y)$. The library implements chains via \texttt{apply\_chain} in \texttt{common.py}:
+\begin{equation}
+  \hat{s} = \mathcal{T}^{-1}\bigl(\Phi_m \circ \cdots \circ \Phi_1(\mathcal{T}y)\bigr),
+\end{equation}
+where $\mathcal{T}$ is STFT and $\mathcal{T}^{-1}$ is overlap-add synthesis. In practice each $\Phi_i$ is a time-domain module $f_i(y,f_s)$ that may internally perform its own STFT/iSTFT; composition is sequential:
+\begin{equation}
+  y^{(0)}=y, \quad y^{(i)}=f_i(y^{(i-1)}, f_s),\quad i=1,\ldots,m, \quad \hat{s}=y^{(m)}.
+  \label{eq:chain_compose}
+\end{equation}
+
+\begin{algorithm}[H]
+  \caption{Mixed-algorithm chain execution (\texttt{apply\_chain})}
+  \label{alg:apply_chain}
+  \begin{algorithmic}[1]
+    \Require Waveform $y(n)$, sample rate $f_s$, ordered list of processors $\{f_1,\ldots,f_m\}$
+    \Ensure Enhanced waveform $\hat{s}(n)$
+    \State $y' \gets y$
+    \For{$i = 1$ \textbf{to} $m$}
+      \State $y' \gets f_i(y',\, f_s)$ \Comment{Eq.~\eqref{eq:chain_compose}}
+    \EndFor
+    \State \Return $y'$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{definition}[Physics-matched decomposition]
+\label{def:physics_match}
+Interference $d(n)$ admits a physics-matched decomposition if
+\begin{equation}
+  d(n) = d^{(1)}(n) + d^{(2)}(n) + \cdots + d^{(m)}(n),
+\end{equation}
+where each $d^{(i)}$ is the perturbation class targeted by $\Phi_i$ (tonal, reverberation, chirp, broadband, etc.).
+\end{definition}
+
+\subsection{Theorem: Sequential Reduction of Structured Components}
+
+\begin{theorem}[Structured-interference reduction]
+\label{thm:chain}
+Suppose $Y=S+D^{(1)}+D^{(2)}+W$ where $\Phi_1$ removes $D^{(1)}$ with attenuation $A_1>0$\,dB in its subspace, and $\Phi_2$ is OM-LSA designed for stochastic residual $D^{(2)}+W$. If $\Phi_1$ is approximately linear on $D^{(1)}$ and orthogonal to $S$ in mean-square sense, then the post-chain a posteriori SNR satisfies
+\begin{equation}
+  \gamma_{\mathrm{post}} \ge \gamma_{\mathrm{omlsa-only}} + \Delta(A_1),
+\end{equation}
+where $\Delta(A_1)>0$ increases with tonal/reverberation energy removed before OM-LSA.
+\end{theorem}
+
+\begin{proof}[Sketch]
+OM-LSA gain is monotonic in $\gamma$. Removing $D^{(1)}$ before OM-LSA lowers effective noise power in affected bins, increasing $\gamma(k,t)$ for fixed $|S|$. For hum tones, notch attenuation of 20--40\,dB at harmonics directly increases local SNR in those bins. For chirp, ridge cancellation prevents energy smearing that inflates $\hat{N}$ across bins. Empirically, scene09 chirp chain (\texttt{subspace\_denoise} $\rightarrow$ \texttt{chirp\_notch}) reduces distill-refinement RMS error by 0.0019 versus routed-only (\chapref{ch:experiments}).
+\end{proof}
+
+\subsection{Canonical Chains in \projectshort{}}
+
+\begin{table}[H]
+  \centering
+  \caption{Physics-matched algorithm chains used by the rule router.}
+  \label{tab:chains}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Chain} & \textbf{Stages} & \textbf{Rationale (Theorem~\ref{thm:chain})} \\
+    \midrule
+    Hum / fan   & notch $\rightarrow$ NMF $\rightarrow$ OM-LSA & Remove tones, separate templates, suppress residual \\
+    Chirp       & subspace $\rightarrow$ chirp notch & Reduce rank, cancel moving ridge, OM-LSA inside chirp module \\
+    Reverb+hiss & WPE $\rightarrow$ OM-LSA & Predictable late reverb then stochastic hiss \\
+    Low SNR     & Kalman AR $\rightarrow$ OM-LSA & Linear speech subspace then broadband \\
+    Hiss-heavy  & subspace $\rightarrow$ OM-LSA & Low-rank noise then MMSE \\
+    Default     & OM-LSA/MCRA only & Broadband near-stationary noise \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Why a Unified OM-LSA Back-End}
+
+Using one OM-LSA/MCRA implementation as the final stage ensures:
+\begin{enumerate}
+  \item \textbf{Consistent gain physics} --- all paths apply MMSE shrinkage and soft flooring (Propositions~\ref{prop:soft_vad}--\ref{prop:mcra}).
+  \item \textbf{Parameter portability} --- ANASS ranges (\chapref{ch:scene}) tune a single back-end.
+  \item \textbf{Distillation compatibility} --- TinyResidualRefiner learns residual masks on a consistent routed STFT statistics (\chapref{ch:dl}).
+\end{enumerate}
+
+Front-ends linearly or nonlinearly \emph{precondition} the mixture so that OM-LSA assumptions (slowly varying $\hat{N}$, speech sparsity in time-frequency) hold more closely---this is the central advantage of mixed-algorithm processing over monolithic fixed subtraction or a single undifferentiated OM-LSA instance.
+
+\section{Comparison Summary}
+\label{sec:algo_comparison}
+
+\begin{table}[H]
+  \centering
+  \caption{Qualitative comparison: fixed subtraction vs.\ adaptive OM-LSA vs.\ mixed chains.}
+  \label{tab:algo_compare}
+  \small
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Criterion} & \textbf{Fixed subtract.} & \textbf{OM-LSA/MCRA} & \textbf{Mixed chain} \\
+    \midrule
+    Local SNR adaptivity       & No  & Yes (bin-wise) & Yes + structural \\
+    Non-stationary noise       & Poor & Good (MCRA)   & Excellent \\
+    Tonal / chirp interference & Poor & Poor          & Excellent \\
+    Reverberation              & Poor & Moderate      & Good (WPE) \\
+    Interpretability           & High & High          & High (logged chain) \\
+    Compute cost               & Low  & Low           & Low--medium \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Chapter Summary}
+\label{sec:algo_summary}
+
+The enhanced OM-LSA/MCRA core replaces scalar spectral subtraction with MMSE Bayesian gains, decision-directed SNR smoothing, MCRA noise tracking, and logistic speech-presence blending---addressing Propositions~\ref{prop:musical_noise}--\ref{prop:scalar_alpha}. Specialized modules attack interference classes that violate OM-LSA assumptions: tonal hum (notches), reverberation (WPE), low-rank hiss (subspace), low local SNR (Kalman--AR), mixed templates (NMF), and sweeping chirp (ridge cancellation). Theorem~\ref{thm:chain} formalizes why sequential physics-matched composition with a unified OM-LSA back-end yields lower residual error than any single algorithm on heterogeneous scenes. \chapref{ch:routing} describes how scene metrics select among these chains automatically.

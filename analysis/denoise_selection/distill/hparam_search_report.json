@@ -1,0 +1,35 @@
+{
+  "phase1_reference": {
+    "selected_tag": "runA",
+    "selected_inference_residual_scale": 0.1,
+    "best_count": 11,
+    "mean_improve_vs_routed_rms": 8.100404733650419e-07
+  },
+  "phase2_candidates": [
+    {
+      "tag": "runC",
+      "lr": 0.0005,
+      "final_train_loss": 0.23167526721954346,
+      "val_l1_mask": 0.5297793944676717
+    },
+    {
+      "tag": "runD",
+      "lr": 0.00035,
+      "final_train_loss": 0.23529012501239777,
+      "val_l1_mask": 0.5224852561950684
+    }
+  ],
+  "phase2_inference_scale_sweep": [
+    {
+      "tag": "runD",
+      "residual_scale": 1.0,
+      "better_than_routed_count": 15,
+      "mean_improve_vs_routed_rms": 0.0006185003600543098,
+      "scene02_improve_vs_routed_rms": 0.0006701918831530321,
+      "scene09_improve_vs_routed_rms": 0.0019056725845137679
+    }
+  ],
+  "selected_tag": "runD",
+  "selection_rule": "lowest val_l1_mask, then best AB gain",
+  "selected_inference_residual_scale": 1.0
+}

@@ -1,0 +1,217 @@
+\chapter{Background and Related Work}
+\label{ch:background}
+
+This chapter reviews speech enhancement methods relevant to local audio preprocessing for ASR, organized from classical model-based techniques to modern deep-learning approaches and compact-model distillation. The discussion emphasizes concepts directly instantiated in \projectshort{}: an OM-LSA/MCRA core, specialized interference modules, DeepFilterNet3 as a teacher model, and a tiny distilled refiner for edge deployment.
+
+\section{Classical Speech Enhancement}
+\label{sec:classical}
+
+Single-channel enhancement assumes the observation model in \eqnref{eq:signal_model}. Most classical methods operate in the short-time Fourier transform (STFT) domain,
+\begin{equation}
+  Y(k,t) = S(k,t) + D(k,t),
+\end{equation}
+where $k$ indexes frequency bins and $t$ indexes frames. Enhancement typically estimates a real-valued gain $G(k,t) \in [0,1]$ and forms $\hat{S}(k,t)=G(k,t)Y(k,t)$ before inverse STFT synthesis~\cite{loizou2013}. The central difficulty is that $S(k,t)$ and $D(k,t)$ are not directly observable; performance therefore depends critically on noise power spectral density (PSD) estimation, prior modeling of speech presence, and control of suppression artifacts.
+
+\subsection{Spectral Subtraction}
+\label{sec:spectral_subtraction}
+
+Spectral subtraction, introduced by Boll~\cite{boll1979}, is one of the earliest and most influential enhancement families. Given an estimate of the noise magnitude spectrum $\lvert \hat{D}(k,t)\rvert$, the enhanced magnitude is obtained by
+\begin{equation}
+  \lvert \hat{S}(k,t)\rvert =
+  \max\!\Bigl(\lvert Y(k,t)\rvert - \alpha \lvert \hat{D}(k,t)\rvert,\,\beta \lvert Y(k,t)\rvert\Bigr),
+  \label{eq:spec_sub}
+\end{equation}
+where $\alpha \ge 1$ is an over-subtraction factor and $\beta$ is a spectral floor preventing negative magnitudes. Phase is usually taken from the noisy observation: $\angle\hat{S}(k,t)=\angle Y(k,t)$.
+
+Spectral subtraction is attractive for ASR front-ends because it is lightweight, requires no training data, and exposes interpretable parameters ($\alpha$, $\beta$, noise update rate). However, its limitations are well documented~\cite{loizou2013}:
+\begin{itemize}
+  \item \textbf{Musical noise} --- random narrowband peaks in the residual caused by independent bin-wise processing;
+  \item \textbf{Over-subtraction vs.\ under-suppression} --- large $\alpha$ reduces noise but attenuates consonants; small $\alpha$ leaves audible residue;
+  \item \textbf{Non-stationary noise} --- a slowly updated noise estimate cannot track babble, bursts, or speech-like interference;
+  \item \textbf{Fixed parameters} --- a single $(\alpha,\beta)$ pair is inadequate when local SNR varies strongly across time and frequency.
+\end{itemize}
+In this project, classical spectral subtraction serves as an analysis baseline in scene reports: residual kurtosis, spectro-temporal patterns, and band-wise SNR statistics quantify when fixed subtraction fails and motivate adaptive alternatives. The ANASS framework (\chapref{ch:scene}) explicitly parameterizes over-subtraction and flooring in a band-dependent manner rather than using a single global pair as in~\eqnref{eq:spec_sub}.
+
+\subsection{Wiener Filtering and MMSE Estimators}
+\label{sec:mmse}
+
+The Wiener filter minimizes mean-square error under second-order statistics. In the STFT domain, a common form is
+\begin{equation}
+  G_{\mathrm{Wiener}}(k,t) =
+  \frac{\xi(k,t)}{1+\xi(k,t)}, \qquad
+  \xi(k,t) = \frac{\mathbb{E}[\lvert S(k,t)\rvert^2]}{\mathbb{E}[\lvert D(k,t)\rvert^2]},
+  \label{eq:wiener}
+\end{equation}
+where $\xi(k,t)$ is the a priori SNR. Because true statistics are unknown, practical systems use decision-directed or smoothed estimates of $\xi$ and $\gamma(k,t)=\lvert Y(k,t)\rvert^2/\mathbb{E}[\lvert D(k,t)\rvert^2]$.
+
+Ephraim and Malah~\cite{ephraim1984} derived minimum mean-square error (MMSE) short-time spectral amplitude (STSA) estimators under statistical speech models. These estimators improve upon two-parameter subtraction by accounting for uncertainty in speech presence and by providing nonlinear gain curves that preserve low-energy speech components more gracefully. The optimal modified log-spectral amplitude (OM-LSA) estimator~\cite{ephraim2005} further refines MMSE-LSA by operating on log-spectral amplitudes and incorporating a decision-directed a priori SNR update:
+\begin{equation}
+  \xi(k,t) = \alpha_{\mathrm{dd}}\, G^2(k,t{-}1)\, \gamma(k,t{-}1)
+           + (1-\alpha_{\mathrm{dd}})\, \max\bigl(\gamma(k,t)-1,\,0\bigr).
+  \label{eq:dd_xi_bg}
+\end{equation}
+The OM-LSA gain $G_{\mathrm{H1}}(k,t)$ depends on both $\xi(k,t)$ and the a posteriori SNR $\gamma(k,t)$ through an exponential integral form~\cite{ephraim2005,loizou2013}.
+
+The \texttt{base\_omlsa\_mcra} module in \projectshort{} implements this OM-LSA family as the shared back-end for nearly all algorithm chains. Using a common back-end ensures that specialized front-end modules (notch filtering, dereverberation, subspace projection) feed a consistent, statistically motivated suppressor rather than ad hoc magnitude clipping.
+
+\subsection{Noise Power Spectral Density Estimation}
+\label{sec:noise_psd}
+
+MMSE and OM-LSA performance depends on accurate noise PSD tracking. The minima-controlled recursive averaging (MCRA) approach~\cite{loizou2013} maintains a smoothed power spectrum and tracks local minima over a sliding window, under the assumption that each frequency bin reaches noise-dominated levels occasionally. Speech presence is then inferred from the relationship between instantaneous power and the tracked minima.
+
+Voice activity detection (VAD) can gate noise updates so that speech-dominated frames do not contaminate $\hat{N}(k,t)$. Hard VAD thresholds on energy or SNR, however, misclassify weak consonants and low-energy voiced segments. Soft gating via speech presence probability $p_1(k,t)$---as used in this project---provides a continuous weighting:
+\begin{equation}
+  \alpha_t(k) = \alpha_{\mathrm{noise}} + \eta\, p_1(k,t), \qquad
+  p_1(k,t) = \sigma\!\bigl(v(k,t)-1\bigr),
+\end{equation}
+where $\sigma(\cdot)$ is a logistic function and $v(k,t)$ combines a priori and a posteriori SNR. Noise updates are stronger when $p_1$ is low (likely noise-only) and weaker when $p_1$ is high (likely speech). This mechanism directly addresses a failure mode identified in project scene analysis: in low-SNR scenes such as \texttt{scene02\_white\_snr5}, more than 75\% of frames can exhibit local SNR below 0\,dB, making hard gating unreliable.
+
+\subsection{Specialized Classical Modules}
+\label{sec:specialized_classical}
+
+Beyond generic spectral estimators, structured interference calls for targeted preprocessing. The following techniques appear in the \projectshort{} algorithm library and related literature:
+
+\paragraph{Tonal suppression and notch filtering.}
+Power-line hum (50/60\,Hz) and fan noise produce narrowband peaks and harmonics. Peak picking on Welch PSD estimates, followed by IIR notch filtering with frequency-dependent quality factor $Q$, is a standard engineering approach. The \texttt{adaptive\_notch\_bank} module combines data-driven peak detection with harmonic priors at 50 and 60\,Hz before OM-LSA processing.
+
+\paragraph{Dereverberation.}
+Reverberation smears speech energy across time, violating the quasi-stationary assumptions of simple noise trackers. Weighted prediction error (WPE) dereverberation predicts each time frame from delayed past frames in the STFT domain and subtracts the prediction, reducing late reflections~\cite{loizou2013}. The \texttt{wpe\_omlsa} chain applies a lightweight single-channel WPE stage followed by OM-LSA for residual noise.
+
+\paragraph{Subspace projection.}
+When interference occupies a low-dimensional subspace---for example, narrowband chirp or colored hiss concentrated in initial frames---singular value decomposition (SVD) on early magnitude spectra can estimate a noise subspace $\mathbf{U}_n$ and project the mixture away from it. The \texttt{subspace\_denoise} module uses this idea before OM-LSA refinement.
+
+\paragraph{Autoregressive modeling and Kalman filtering.}
+For highly non-stationary or low-SNR speech-like noise, time-domain AR models estimated via Yule--Walker equations can capture short-term speech structure. A Kalman filter with AR dynamics separates predictable speech components from broadband residue~\cite{loizou2013}. The \texttt{kalman\_ar} module applies this filter prior to OM-LSA.
+
+\paragraph{Non-negative matrix factorization (NMF).}
+NMF decomposes magnitude spectrograms into non-negative basis matrices, enabling supervised or semi-supervised separation when noise bases can be learned from non-speech segments~\cite{loizou2013}. In this project, NMF appears primarily as a secondary stage after tonal suppression for hum/fan scenarios.
+
+Together, these modules illustrate a key design principle adopted in \projectshort{}: \emph{match the algorithm to the interference structure}, then hand off to a unified OM-LSA back-end.
+
+\section{Deep Learning-Based Enhancement}
+\label{sec:deep_learning}
+
+Deep learning has substantially advanced perceptual speech enhancement by learning complex time--frequency mappings from data. Two representative lines are especially relevant to this project: hybrid DSP/neural models suitable for real-time use, and high-capacity enhancers used as teachers.
+
+\subsection{Hybrid Models: RNNoise}
+\label{sec:rnnoise}
+
+RNNoise~\cite{rnnoise2018} combines classical signal processing with a lightweight recurrent neural network. Hand-crafted features (including pitch and band energies) are mapped to per-band gains by a small network trained on synthetic and real noise. RNNoise demonstrates that neural enhancement can run in real time on consumer hardware when model capacity is constrained and domain knowledge guides feature design.
+
+RNNoise is relevant to \projectshort{} as a conceptual middle ground: neither purely analytical nor a large STFT U-Net. However, RNNoise targets full-band telephony bandwidth with a fixed feature pipeline, whereas this project emphasizes \emph{modular, scene-routed} classical stages with optional residual refinement rather than a monolithic hybrid RNN.
+
+\subsection{DeepFilterNet and DeepFilterNet3}
+\label{sec:deepfilternet}
+
+DeepFilterNet~\cite{deepfilternet2023} operates in an ERB-scale band representation and uses a two-stage strategy: coarse magnitude envelope estimation followed by fine complex filtering (deep filtering) that predicts time-varying impulse responses per band. By aligning processing with auditory critical-band resolution, DeepFilterNet achieves strong perceptual quality at moderate complexity.
+
+DeepFilterNet3, bundled in the project repository under \texttt{models/DeepFilterNet3/}, serves two roles:
+\begin{enumerate}
+  \item \textbf{Teacher model} --- offline generation of target enhanced speech and mask targets for distillation (\chapref{ch:dl});
+  \item \textbf{Performance upper bound} --- reference against which routed mathematical denoising and refined outputs are compared in ablation studies (\chapref{ch:experiments}).
+\end{enumerate}
+At inference, DeepFilterNet requires GPU or optimized CPU execution and non-trivial memory relative to the TinyResidualRefiner. For always-on smartphone preprocessing ahead of ASR, deploying DeepFilterNet on every utterance may be acceptable for batch transcription but costly for continuous listening.
+
+\subsection{Deployment Trade-offs}
+\label{sec:dl_tradeoffs}
+
+Table~\ref{tab:method_tradeoffs} summarizes practical differences among enhancement families from an ASR preprocessing perspective.
+
+\begin{table}[H]
+  \centering
+  \caption{Qualitative comparison of enhancement families (ASR front-end perspective).}
+  \label{tab:method_tradeoffs}
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Family} & \textbf{Interpretability} & \textbf{Typical cost} & \textbf{Adaptivity to scene} \\
+    \midrule
+    Fixed spectral subtraction & High & Very low & Low \\
+    OM-LSA / MCRA             & High & Low & Medium (via tracking) \\
+    Modular routed pipeline   & High & Low--medium & High (explicit routing) \\
+    RNNoise / hybrid RNN      & Medium & Low--medium & Medium (fixed model) \\
+    DeepFilterNet3            & Low & High & High (learned) \\
+    TinyResidualRefiner       & Medium & Very low & Medium (residual on routed input) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Library-based denoisers (e.g., \texttt{noisereduce}) and SciPy Wiener filtering, exposed as baselines in the web platform, occupy the low-cost end of this spectrum but lack scene-specific routing and structured interference handling. \projectshort{} positions itself in the middle: most computation remains interpretable mathematics; a small network closes part of the gap to DeepFilterNet when enabled.
+
+\section{Knowledge Distillation for Audio Enhancement}
+\label{sec:distillation}
+
+Knowledge distillation~\cite{hintondistill2015} trains a compact \emph{student} network to mimic a larger \emph{teacher}. Instead of learning directly from clean labels alone, the student matches soft targets produced by the teacher, which encode richer structure about confusable outputs and suppression patterns.
+
+In speech enhancement, distillation is attractive for ASR preprocessing because:
+\begin{itemize}
+  \item the teacher can be a strong offline model (DeepFilterNet3) not deployed on device;
+  \item the student can operate on domain-specific inputs already partially cleaned by classical processing;
+  \item residual learning reduces the dynamic range the student must represent.
+\end{itemize}
+
+\subsection{Teacher--Student Pipelines in This Project}
+
+The \projectshort{} distillation pipeline constructs training tuples
+\[
+  \bigl(D_{\mathrm{math}},\, T_{\mathrm{teacher}},\, Y_{\mathrm{noisy}},\, S_{\mathrm{clean}}\bigr),
+\]
+where $D_{\mathrm{math}}$ is the STFT of routed mathematical denoising output, $T_{\mathrm{teacher}}$ is the teacher-enhanced STFT, and $S_{\mathrm{clean}}$ is the clean reference from the benchmark test set. The student predicts a multiplicative residual mask on $\lvert D_{\mathrm{math}}\rvert$ rather than estimating clean speech from scratch:
+\begin{equation}
+  M = \mathrm{clip}\bigl(1 + \alpha \cdot \tanh(\mathcal{F}_\theta(\mathbf{X})),\, m_{\min},\, m_{\max}\bigr), \quad
+  \hat{Y} = M \odot D_{\mathrm{math}}.
+\end{equation}
+The input $\mathbf{X}$ stacks log-compressed magnitudes of $D_{\mathrm{math}}$ and $Y_{\mathrm{noisy}}$, allowing the network to use both partially enhanced structure and raw noise context.
+
+The training objective combines:
+\begin{enumerate}
+  \item L1 loss between predicted and teacher-derived masks;
+  \item compressed-magnitude MSE against the teacher STFT;
+  \item auxiliary compressed-magnitude MSE against clean speech.
+\end{enumerate}
+Hard-scene weighted sampling emphasizes low-SNR and structured-interference scenes (\texttt{scene02}, \texttt{scene09}, \texttt{scene11}) where mathematical routing alone leaves the largest residual errors.
+
+\subsection{Relation to End-to-End Enhancement}
+
+End-to-end deep enhancers learn a single mapping $Y \mapsto \hat{S}$ with millions of parameters. The residual-on-math formulation in this project constrains the student to \emph{correct} a physically meaningful baseline, similar in spirit to residual networks in vision but applied in the STFT magnitude domain. Empirically, on the 15-scene benchmark, distilled refinement improves RMS error versus routed output in all scenes (\chapref{ch:experiments}), suggesting that a large fraction of teacher knowledge can be transferred into a sub-million-parameter Conv2D stack trainable in under 15 minutes on consumer hardware.
+
+\section{Adaptive Selection and Preprocessing Pipelines}
+\label{sec:adaptive_selection}
+
+Most published enhancers evaluate a \emph{single} model on diverse test sets. In deployed ASR front-ends, however, noise conditions vary by context (office, vehicle, home appliance hum, public space babble). Two adaptive strategies appear in the literature and in engineering practice:
+
+\begin{itemize}
+  \item \textbf{Internal adaptivity} --- time-varying gains, noise trackers, and VAD inside one algorithm (e.g., MCRA, OM-LSA);
+  \item \textbf{External adaptivity} --- selecting or composing different algorithms based on detected scene type, SNR regime, or microphone metadata.
+\end{itemize}
+
+\projectshort{} implements both levels. Internally, OM-LSA/MCRA adapts per time--frequency bin via $p_1(k,t)$ and MCRA minima tracking. Externally, the rule router (\chapref{ch:routing}) reads precomputed scene metrics---band-wise SNR, fraction of frames with negative local SNR, noise-type labels---and selects chains such as \texttt{wpe\_omlsa} for reverberation or \texttt{subspace\_denoise} $\rightarrow$ \texttt{chirp\_notch} for chirp interference.
+
+This design is motivated by full-dimensional scene reports (\chapref{ch:scene}), which show that no single algorithm minimizes reconstruction error across all 15 benchmark scenes. Automatic per-scene method search and manual override files further support reproducible pipeline tuning, bridging research analysis and deployable configuration.
+
+\section{Local Preprocessing and ASR Front-Ends}
+\label{sec:asr_frontends}
+
+Although this report does not couple enhancement to a specific ASR decoder, the preprocessing literature consistently shows that front-end quality affects recognition. Noise reduces effective SNR at the feature extractor, flattens harmonic detail needed by acoustic models, and introduces transient artifacts that inflate filterbank variance. Enhancement can therefore improve WER even when the decoder architecture is unchanged~\cite{loizou2013}.
+
+Relevant preprocessing categories for ASR include denoising (this project), VAD for endpointing, dereverberation, and multi-microphone beamforming. Single-channel denoising is the most portable across devices and aligns with the project's benchmark. Metrics computed in the web platform---SNR improvement, residual RMS, kurtosis, band energy, spectrograms---serve as \emph{proxy indicators} for ASR-relevant distortion until end-to-end WER evaluation is integrated.
+
+\section{Summary of Research Gaps}
+\label{sec:gaps}
+
+The literature and the project's scene analysis together highlight four gaps that \projectshort{} is designed to address:
+
+\begin{enumerate}
+  \item \textbf{Gap 1: Fixed-parameter classical methods fail under heterogeneous noise.}
+  Scene reports show high proportions of locally negative SNR frames and large high/low band SNR imbalance. Fixed spectral subtraction leaves musical noise and speech distortion; a single OM-LSA instance without routing underperforms on chirp, babble, and reverberation scenes.
+
+  \item \textbf{Gap 2: Large deep models are costly for local always-on preprocessing.}
+  DeepFilterNet3 provides strong quality but is heavyweight for continuous mobile front-ends and lacks modular interpretability. A deployment-friendly alternative must preserve most gains at a fraction of the inference cost.
+
+  \item \textbf{Gap 3: Lack of analysis-to-algorithm pipelines.}
+  Many systems treat enhancement and evaluation separately. This project links full-dimensional scene statistics to ANASS parameter ranges, routing rules, and override configuration in a closed loop.
+
+  \item \textbf{Gap 4: Insufficient integrated evaluation for preprocessing research.}
+  Objective metrics, diagnostic visualizations, and perceptual ABX tests are rarely bundled in one reproducible workflow. The web platform addresses this for systematic comparison of routed, refined, and baseline outputs.
+\end{enumerate}
+
+In response, \projectshort{} adopts a \emph{hybrid math-first + lightweight-DL} strategy: scene-aware classical routing provides the interpretable backbone; optional TinyResidualRefiner distillation transfers teacher knowledge into an edge-compatible residual corrector; and the analysis platform supports rigorous, ASR-oriented preprocessing studies. \chapref{ch:system} describes how these components are integrated into a cohesive system architecture.

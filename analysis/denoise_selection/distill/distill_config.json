@@ -1,0 +1,27 @@
+{
+  "sample_rate": 16000,
+  "n_fft": 512,
+  "hop": 128,
+  "chunk_seconds": 1.0,
+  "max_train_seconds": 900,
+  "max_steps": 1200,
+  "batch_size": 1,
+  "learning_rate": 0.0005,
+  "loss_weights": {
+    "distill_l1": 1.0,
+    "mag_compress": 0.3,
+    "clean_aux_mag": 0.15
+  },
+  "compress_exponent": 0.5,
+  "train_residual_alpha": 0.8,
+  "hard_scene_weights": {
+    "scene02_white_snr5": 3.0,
+    "scene09_chirp_interference_snr8": 3.5,
+    "scene11_intermittent_bursts_snr7": 1.5
+  },
+  "train_split_ratio": 0.8,
+  "seed": 42,
+  "selected_tag": "runD",
+  "selected_checkpoint": "analysis/denoise_selection/distill/checkpoints/student_runD.pt",
+  "inference_residual_scale": 1.0
+}

@@ -1,0 +1,182 @@
+\chapter{Scene List and Metadata}
+\label{app:scenes}
+
+This appendix supplements \chapref{ch:system} and documents the benchmark corpus for the \projectshort{} platform~\cite{denoise_selection2026}. All benchmark clips are mono PCM WAV at $f_s=16\,000$\,Hz. Each scene mixes the same Mandarin utterance (\texttt{clean\_reference.wav}, duration $5.618$\,s, $N=89\,884$ samples) with a distinct noise process at the nominal global SNR listed below. Per-scene analysis metrics are stored as \texttt{analysis/scene\_details/<scene>\_metrics.json} (14 of 15 scenes present at report time; \texttt{scene01} metrics can be regenerated from \texttt{analysis/reports/scene01\_full\_dimension\_analysis\_report.md}).
+
+\section{Benchmark Scene Table}
+\label{app:scene_table}
+
+Table~\ref{tab:scene_list} lists filenames and nominal conditions. Table~\ref{tab:scene_metrics} adds band-wise SNR (low/mid/high in dB), the fraction of STFT bins with local SNR below 0\,dB (\texttt{ratio\_lt0}), baseline fixed-subtraction residual kurtosis $K$ (musical-noise indicator from scene analysis), and the grid-search override module used for routed outputs in \chapref{ch:experiments}.
+
+\begin{table}[H]
+  \centering
+  \caption{Benchmark scenes in \texttt{noisy\_testset/} (shared clean reference).}
+  \label{tab:scene_list}
+  \small
+  \begin{tabular}{clll}
+    \toprule
+    \textbf{ID} & \textbf{Filename} & \textbf{Noise type} & \textbf{SNR (dB)} \\
+    \midrule
+    01 & \texttt{scene01\_white\_snr15.wav}              & White noise         & 15 \\
+    02 & \texttt{scene02\_white\_snr5.wav}               & White noise         & 5  \\
+    03 & \texttt{scene03\_pink\_snr10.wav}               & Pink noise          & 10 \\
+    04 & \texttt{scene04\_brown\_snr8.wav}               & Brown noise         & 8  \\
+    05 & \texttt{scene05\_hum50\_snr12.wav}              & 50\,Hz power hum    & 12 \\
+    06 & \texttt{scene06\_hum60\_snr12.wav}              & 60\,Hz power hum    & 12 \\
+    07 & \texttt{scene07\_highfreq\_hiss\_snr10.wav}     & High-frequency hiss & 10 \\
+    08 & \texttt{scene08\_lowfreq\_rumble\_snr10.wav}     & Low-frequency rumble& 10 \\
+    09 & \texttt{scene09\_chirp\_interference\_snr8.wav} & Chirp interference  & 8  \\
+    10 & \texttt{scene10\_impulsive\_clicks\_snr9.wav}   & Impulsive clicks    & 9  \\
+    11 & \texttt{scene11\_intermittent\_bursts\_snr7.wav}& Intermittent bursts & 7  \\
+    12 & \texttt{scene12\_babble\_like\_snr5.wav}        & Babble-like noise   & 5  \\
+    13 & \texttt{scene13\_street\_combo\_snr6.wav}       & Street mixture      & 6  \\
+    14 & \texttt{scene14\_office\_fan\_snr9.wav}          & Office fan noise    & 9  \\
+    15 & \texttt{scene15\_reverb\_plus\_hiss\_snr10.wav} & Reverberation + hiss& 10 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Scene analysis summary and evaluation override modules (from \texttt{scene\_details/} and \texttt{scene\_method\_overrides.json}).}
+  \label{tab:scene_metrics}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{clrrrrrl}
+    \toprule
+    \textbf{ID} & \textbf{Scene stem} & \textbf{L} & \textbf{M} & \textbf{H} & \textbf{$r_{<0}$} & \textbf{$K$} & \textbf{Override} \\
+    \midrule
+    01 & \texttt{scene01\_white\_snr15}     & 16.1 & 18.8 & 1.5  & 0.767 & 4.38  & \texttt{nmf\_denoise} \\
+    02 & \texttt{scene02\_white\_snr5}      & 5.9  & 8.8  & $-$8.5 & 0.897 & 4.57  & \texttt{nmf\_denoise} \\
+    03 & \texttt{scene03\_pink\_snr10}      & 1.3  & 16.2 & 5.1  & 0.763 & 4.59  & \texttt{base\_omlsa\_mcra} \\
+    04 & \texttt{scene04\_brown\_snr8}      & 12.0 & 41.6 & 36.7 & 0.255 & 2.34  & \texttt{subspace\_denoise} \\
+    05 & \texttt{scene05\_hum50\_snr12}     & $-$1.5 & 40.1 & 55.7 & 0.175 & 3.99  & \texttt{subspace\_denoise} \\
+    06 & \texttt{scene06\_hum60\_snr12}     & $-$1.5 & 30.7 & 55.7 & 0.177 & 4.21  & \texttt{nmf\_denoise} \\
+    07 & \texttt{scene07\_highfreq\_hiss}   & 58.8 & 24.3 & $-$5.8 & 0.672 & 8.00  & \texttt{wpe\_omlsa} \\
+    08 & \texttt{scene08\_lowfreq\_rumble}  & $-$3.3 & 35.3 & 55.8 & 0.186 & 4.35  & \texttt{subspace\_denoise} \\
+    09 & \texttt{scene09\_chirp\_interf.}   & 13.4 & 10.8 & $-$4.9 & 0.168 & 2.00  & \texttt{chirp\_notch} \\
+    10 & \texttt{scene10\_impulsive\_click} & $-$0.3 & 11.8 & 5.2  & 0.676 & 142.2 & \texttt{nmf\_denoise} \\
+    11 & \texttt{scene11\_intermit.\_burst} & 33.3 & 8.5  & $-$4.5 & 0.174 & 24.25 & \texttt{kalman\_ar} \\
+    12 & \texttt{scene12\_babble\_like}     & $-$2.9 & 6.1  & 55.7 & 0.198 & 4.68  & \texttt{wpe\_omlsa} \\
+    13 & \texttt{scene13\_street\_combo}    & 0.5  & 10.7 & $-$7.1 & 0.829 & 5.10  & \texttt{subspace\_denoise} \\
+    14 & \texttt{scene14\_office\_fan}      & $-$3.0 & 14.4 & 8.7  & 0.511 & 5.74  & \texttt{nmf\_denoise} \\
+    15 & \texttt{scene15\_reverb\_hiss}     & 26.2 & 18.1 & $-$5.3 & 0.708 & 6.18  & \texttt{wpe\_omlsa} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+Columns L/M/H: band SNR (dB) for 0--300\,Hz / 300--3400\,Hz / 3400--8000\,Hz.
+$r_{<0}$: \texttt{ratio\_lt0}; $K$: baseline subtraction residual kurtosis.
+Scene01 L/M/H/$r_{<0}$/$K$ from the Markdown analysis report; other rows from JSON.
+\section{Priority Scenes and ANASS Guidance}
+\label{app:anass}
+
+Global ANASS initialization ranges exported to \texttt{analysis/anass\_init\_ranges.json} are:
+$\alpha_{\mathrm{low}}\in[1.4,2.0]$, $\alpha_{\mathrm{high}}\in[3.2,4.0]$,
+$\beta_{\mathrm{low}}\in[0.008,0.0176]$, $\beta_{\mathrm{high}}\in[0.045,0.0765]$,
+noise update $\in[0.87,0.93]$, time smoothing $\in[0.15,0.35]$, frequency smoothing $\in[0.05,0.16]$.
+Priority optimization scenarios (higher distillation sampling weight): \texttt{scene02}, \texttt{scene09}, \texttt{scene10}, \texttt{scene11} (\texttt{distill\_config.json}).
+
+\chapter{Additional Figures and Plots}
+\label{app:figures}
+
+\section{Offline Scene-Analysis Figures}
+
+Full-dimensional analysis reports under \texttt{analysis/reports/} reference PNG figures in \texttt{analysis/priority\_plots/} and \texttt{analysis/secondary\_plots/}. Representative diagnostics include:
+\begin{itemize}
+  \item time-domain waveforms and RMS/ZCR histograms (clean vs.\ noise);
+  \item Welch PSD overlays and band-wise SNR tables;
+  \item STFT triplets (clean / noise / mix) and local-SNR heatmaps (e.g., Figure~\ref{fig:local_snr_heatmap} in \chapref{ch:scene});
+  \item baseline fixed-subtraction residual statistics ($K$, flatness).
+\end{itemize}
+Regenerate plots with the project's scene-analysis scripts before submission if PNG assets are not bundled in the repository clone.
+
+\section{Web Platform Plot Catalog}
+
+Each completed upload task stores Plotly JSON at \texttt{webapp/data/plots/<task\_id>\_plots.json}. \texttt{metrics\_service.build\_metrics\_and\_plots()} emits \textbf{28} charts in five groups (\chapref{ch:web}):
+
+\begin{table}[H]
+  \centering
+  \caption{Web chart center plot identifiers (28 total).}
+  \label{tab:web_plots}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l X}
+    \toprule
+    \textbf{Group (count)} & \textbf{Plot IDs} \\
+    \midrule
+    Time domain (5) &
+    \texttt{waveform\_compare}, \texttt{waveform\_zoom}, \texttt{energy\_envelope}, \texttt{short\_time\_energy}, \texttt{zcr\_curve} \\
+    Frequency (5) &
+    \texttt{amplitude\_spectrum}, \texttt{psd\_compare}, \texttt{third\_octave\_energy}, \texttt{band\_energy\_bar}, \texttt{centroid\_bandwidth\_rolloff} \\
+    Time--frequency (6) &
+    \texttt{mel\_original}, \texttt{mel\_denoised}, \texttt{mel\_residual}, \texttt{stft\_original}, \texttt{stft\_denoised}, \texttt{stft\_residual} \\
+    Quality / error (8) &
+    \texttt{global\_snr\_compare}, \texttt{frame\_snr\_curve}, \texttt{band\_snr\_heatmap}, \texttt{residual\_rms\_hist}, \texttt{residual\_kurtosis\_skew}, \texttt{flatness\_compare}, \texttt{delta\_snr}, \texttt{algorithm\_radar} \\
+    Statistics (4) &
+    \texttt{amp\_hist\_compare}, \texttt{frame\_rms\_box}, \texttt{cdf\_compare}, \texttt{energy\_flatness\_scatter} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Experiment Figures in the Report}
+
+\chapref{ch:experiments} embeds spectrogram quads and RMS ablation bars generated by \texttt{report/scripts/gen\_experiment\_figures.py} into \texttt{report/figures/experiments/}:
+\texttt{spectrogram\_scene02\_white\_snr5.png},
+\texttt{spectrogram\_scene09\_chirp\_interference\_snr8.png},
+\texttt{spectrogram\_scene12\_babble\_like\_snr5.png},
+\texttt{spectrogram\_scene15\_reverb\_plus\_hiss\_snr10.png},
+\texttt{rms\_improvement\_bar.png}, and \texttt{routing\_ablation\_rms.png}.
+Run the script after refreshing \texttt{outputs/routed/} and \texttt{outputs/distill\_refined/} WAVs.
+
+\chapter{Source Code Structure}
+\label{app:code}
+
+Table~\ref{tab:repo_layout_app} extends the repository map in \chapref{ch:system}. Entry points for reproduction are listed in Appendix~\ref{app:api}.
+
+\begin{table}[H]
+  \centering
+  \caption{Repository layout (key paths).}
+  \label{tab:repo_layout_app}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l X}
+    \toprule
+    \textbf{Path} & \textbf{Description} \\
+    \midrule
+    \texttt{noisy\_testset/} & 15 noisy scenes + \texttt{clean\_reference.wav} \\
+    \texttt{analysis/scene\_details/} & Per-scene JSON metrics for routing \\
+    \texttt{analysis/reports/} & Markdown full-dimensional analysis reports \\
+    \texttt{analysis/anass\_init\_ranges.json} & ANASS parameter ranges from aggregate analysis \\
+    \texttt{analysis/denoise\_selection/algorithms/} & Seven modules + \texttt{common.py} (STFT) \\
+    \texttt{analysis/denoise\_selection/router/rule\_router.py} & \texttt{choose\_route}, override loading \\
+    \texttt{analysis/denoise\_selection/config/} & \texttt{scene\_method\_overrides.json} \\
+    \texttt{analysis/denoise\_selection/run\_pipeline.py} & Batch routed + optional refine \\
+    \texttt{analysis/denoise\_selection/distill/} & Pairs, training, \texttt{student\_runD.pt}, eval JSON \\
+    \texttt{analysis/denoise\_selection/eval/} & \texttt{search\_best\_method\_per\_scene.py}, batch metrics \\
+    \texttt{analysis/denoise\_selection/outputs/} & \texttt{routed/}, \texttt{distill\_refined/}, logs \\
+    \texttt{analysis/denoise\_selection/webapp/backend/} & FastAPI (\texttt{app/routers/}, \texttt{services/}) \\
+    \texttt{analysis/denoise\_selection/webapp/frontend/} & React UI (Vite) \\
+    \texttt{models/DeepFilterNet3/} & Offline teacher weights (optional) \\
+    \texttt{report/} & This document (\LaTeX{} + \texttt{figures/}) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Module Registry}
+
+\begin{table}[H]
+  \centering
+  \caption{Denoising modules exposed by \texttt{algorithms/\_\_init\_\_.py}.}
+  \label{tab:modules}
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Python name} & \textbf{Role} \\
+    \midrule
+    \texttt{base\_omlsa\_mcra}      & Shared OM-LSA/MCRA back-end \\
+    \texttt{adaptive\_notch\_bank}  & Tonal peak + 50/60\,Hz harmonic notches \\
+    \texttt{wpe\_omlsa}             & Single-channel WPE + OM-LSA \\
+    \texttt{subspace\_denoise}      & Noise subspace projection + OM-LSA \\
+    \texttt{nmf\_denoise}           & Semi-supervised NMF mask + OM-LSA \\
+    \texttt{kalman\_ar}             & Kalman--AR time-domain filter + OM-LSA \\
+    \texttt{chirp\_notch}           & Chirp ridge cancel + notch + OM-LSA \\
+    \bottomrule
+  \end{tabular}
+\end{table}

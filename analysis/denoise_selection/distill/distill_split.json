@@ -1,0 +1,21 @@
+{
+  "train_scenes": [
+    "scene01_white_snr15",
+    "scene02_white_snr5",
+    "scene03_pink_snr10",
+    "scene04_brown_snr8",
+    "scene05_hum50_snr12",
+    "scene06_hum60_snr12",
+    "scene07_highfreq_hiss_snr10",
+    "scene08_lowfreq_rumble_snr10",
+    "scene09_chirp_interference_snr8",
+    "scene10_impulsive_clicks_snr9",
+    "scene11_intermittent_bursts_snr7",
+    "scene12_babble_like_snr5"
+  ],
+  "val_scenes": [
+    "scene13_street_combo_snr6",
+    "scene14_office_fan_snr9",
+    "scene15_reverb_plus_hiss_snr10"
+  ]
+}

@@ -1,0 +1,11 @@
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Speech enhancement in real-world environments remains challenging due to diverse noise types, non-stationary interference, and limited computational resources on edge devices. This report presents \projectshort{}, an end-to-end intelligent audio denoising analysis platform that integrates data-driven scene characterization, adaptive mathematical denoising, lightweight deep-learning refinement, and interactive evaluation.
+
+The proposed pipeline consists of three layers: (1) a full-dimensional scene analysis module that extracts time--frequency statistics and derives parameter guidance for the Adaptive Noise Adaptive Spectral Subtraction (ANASS) framework; (2) a library of seven composable denoising algorithms centered on an enhanced OM-LSA/MCRA core, orchestrated by a scene-aware rule router; and (3) a TinyResidualRefiner student network trained via knowledge distillation from DeepFilterNet3 to perform residual mask correction on mathematically denoised outputs.
+
+Experiments on a 15-scene benchmark covering white, pink, hum, hiss, chirp, reverberation, and babble-like noise demonstrate consistent improvements over fixed-parameter baselines. When optional distillation refinement is enabled, all evaluated scenes show reduced reconstruction error relative to routed mathematical denoising alone.
+
+\vspace{1em}
+\noindent\textbf{Keywords:} speech enhancement, spectral subtraction, OM-LSA, MCRA, adaptive routing, knowledge distillation, audio denoising, scene analysis

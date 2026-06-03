@@ -1,0 +1,78 @@
+% Adaptive routing workflow (Chapter 6)
+\begin{tikzpicture}[
+  node distance=0.75cm and 1.4cm,
+  block/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=shulayer1,
+    rounded corners=3pt,
+    minimum width=2.8cm,
+    minimum height=0.85cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  decision/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=shulayer3,
+    diamond,
+    aspect=2.2,
+    inner sep=1pt,
+    font=\scriptsize,
+    align=center,
+  },
+  store/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=shulayer2,
+    rounded corners=3pt,
+    minimum width=2.6cm,
+    minimum height=0.8cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  arr/.style={
+    -{Stealth[length=2.2mm, width=1.7mm]},
+    line width=0.55pt,
+    draw=shublue!80,
+  },
+]
+
+% --- Row 1: analysis artifacts ---
+\node[store] (metrics) {Scene metrics\\ \texttt{*\_metrics.json}};
+\node[store, right=of metrics] (reports) {Analysis reports\\ \texttt{analysis/reports/}};
+\node[store, right=of reports] (anass) {ANASS ranges\\ \texttt{anass\_init\_ranges.json}};
+
+% --- Row 2: router ---
+\node[block, below=1.1cm of reports] (router) {Rule router\\\texttt{choose\_route()}};
+\node[decision, left=of router] (force) {CLI\\force?};
+\node[decision, right=of router] (override) {Override\\entry?};
+
+% --- Row 3: execution ---
+\node[block, below=1.0cm of router] (chain) {Algorithm chain\\ \texttt{apply\_chain}};
+\node[store, left=of chain] (methods) {Method registry\\ \texttt{METHODS}};
+\node[store, right=of chain] (log) {Route log\\ \texttt{route\_log.json}};
+
+% --- Row 4: validation loop ---
+\node[block, below=1.0cm of chain] (eval) {Grid search\\ \texttt{search\_best\_method}};
+\node[store, right=of eval] (ovcfg) {Overrides\\ \texttt{scene\_method\_overrides.json}};
+
+% --- Arrows ---
+\draw[arr] (metrics.south) -- ++(0,-0.35) -| (router.north);
+\draw[arr] (force.east) -- (router.west);
+\draw[arr] (router.east) -- (override.west);
+\draw[arr] (override.south) |- (chain.north);
+\draw[arr] (router.south) -- (chain.north);
+\draw[arr] (methods.east) -- (chain.west);
+\draw[arr] (chain.east) -- (log.west);
+\draw[arr] (chain.south) -- (eval.north);
+\draw[arr] (eval.east) -- (ovcfg.west);
+\draw[arr] (ovcfg.north) |- (override.east);
+
+% --- Loop label ---
+\node[font=\scriptsize, text=shugray, align=center] at ($(eval)!0.5!(ovcfg)+ (0,-0.55)$)
+  {Evaluation feedback updates overrides};
+
+\end{tikzpicture}

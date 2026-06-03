@@ -1,0 +1,159 @@
+% Three-layer system architecture (included from Chapter 3)
+% Inter-layer spacing anchored to fit-box bottoms (not inner nodes)
+\begin{tikzpicture}[
+  node distance=0.85cm and 0.75cm,
+  block/.style={
+    draw=shublue,
+    line width=0.6pt,
+    fill=white,
+    rounded corners=2pt,
+    minimum height=0.9cm,
+    minimum width=2.5cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  wideblock/.style={
+    block,
+    minimum width=11.5cm,
+  },
+  smallblock/.style={
+    block,
+    minimum width=2.2cm,
+    minimum height=0.8cm,
+    font=\scriptsize,
+  },
+  layerbox/.style={
+    draw=shublue!70,
+    line width=0.5pt,
+    rounded corners=6pt,
+    inner xsep=0.55cm,
+    inner ysep=0.65cm,
+  },
+  layertitle/.style={
+    font=\bfseries\small,
+    text=shublue,
+    align=center,
+  },
+  arr/.style={
+    -{Stealth[length=2.2mm, width=1.8mm]},
+    line width=0.55pt,
+    draw=shublue,
+  },
+  dashedarr/.style={
+    arr,
+    dashed,
+  },
+  note/.style={
+    font=\scriptsize,
+    text=shugray,
+    align=center,
+  },
+]
+
+% --- vertical gaps between layer boxes ---
+\pgfmathsetlengthmacro{\interlayer}{2.85cm}   % box bottom to next layer top row
+\pgfmathsetlengthmacro{\titleabove}{0.38cm}   % title above each fit box
+
+% =============================================================================
+% Layer 1: Scene Analysis
+% =============================================================================
+\node[block] (clean) {Clean\\Reference};
+\node[block, right=of clean] (noise) {Noise\\Component};
+\node[block, right=of noise] (mix) {Noisy\\Mixture};
+
+\node[wideblock, below=0.95cm of noise] (metrics) {%
+  Scene Metrics Extraction\\
+  \scriptsize (RMS, ZCR, band SNR, local SNR, flatness)};
+
+\node[wideblock, below=of metrics] (anass) {%
+  ANASS Parameter Guidance \& Full-Dimensional Reports};
+
+\begin{scope}[on background layer]
+  \node[layerbox, fill=shulayer1, fit=(clean)(mix)(anass)] (layer1box) {};
+\end{scope}
+
+\node[layertitle, above=\titleabove of layer1box.north, anchor=south] (layer1title)
+  {Layer 1: Full-Dimensional Scene Analysis};
+
+\draw[arr] (clean.south) -- ++(0,-0.28) -| ([xshift=-0.15cm]metrics.north);
+\draw[arr] (noise.south) -- (metrics.north);
+\draw[arr] (mix.south) -- ++(0,-0.28) -| ([xshift=0.15cm]metrics.north);
+\draw[arr] (metrics) -- (anass);
+
+% =============================================================================
+% Layer 2: Adaptive Math Denoising  (anchored below Layer 1 box)
+% =============================================================================
+\coordinate (layer2anchor) at ([yshift=-\interlayer]layer1box.south);
+
+\node[block, anchor=north, minimum width=2.8cm] (router) at (layer2anchor) {Rule Router};
+\node[block, right=of router, minimum width=3.6cm] (chain) {%
+  Algorithm Chain\\[1pt]\scriptsize (7 modules, composable)};
+\node[block, right=of chain, minimum width=2.8cm] (omlsa) {%
+  OM-LSA/MCRA\\Back-end};
+
+\begin{scope}[on background layer]
+  \node[layerbox, fill=shulayer2, fit=(router)(omlsa)] (layer2box) {};
+\end{scope}
+
+\node[layertitle, above=\titleabove of layer2box.north, anchor=south] (layer2title)
+  {Layer 2: Adaptive Mathematical Denoising};
+
+\draw[arr] (anass.south) -- ++(0,-0.55) -| (router.north);
+\draw[arr] (router) -- (chain);
+\draw[arr] (chain) -- (omlsa);
+
+% =============================================================================
+% Layer 3: Lightweight Deep Refinement  (anchored below Layer 2 box)
+% =============================================================================
+\coordinate (layer3anchor) at ([yshift=-\interlayer]layer2box.south);
+
+\node[smallblock, anchor=north] (mathout) at (layer3anchor) {Routed\\Output};
+\node[block, right=of mathout, minimum width=3.8cm] (student) {%
+  TinyResidualRefiner\\[1pt]\scriptsize (optional distill refine)};
+\node[smallblock, right=of student] (refined) {Refined\\Output};
+
+\node[note, below=0.12cm of student.south] (studentnote)
+  {inputs: routed STFT + noisy STFT};
+
+\begin{scope}[on background layer]
+  \node[layerbox, fill=shulayer3, fit=(mathout)(refined)(studentnote)] (layer3box) {};
+\end{scope}
+
+\node[layertitle, above=\titleabove of layer3box.north, anchor=south] (layer3title)
+  {Layer 3: Lightweight Deep Refinement};
+
+\draw[arr] (omlsa.south) -- ++(0,-0.55) -| (mathout.north);
+\draw[arr] (mathout) -- (student);
+\draw[arr] (student) -- (refined);
+
+% Offline teacher in the gap between Layer 3 and Layer 4
+\node[smallblock, below=1.15cm of layer3box.south, draw=shugray, dashed,
+      anchor=north] (teacher) {DeepFilterNet3\\(offline teacher)};
+
+\draw[dashedarr, draw=shugray]
+  (teacher.north) -- node[note, right=0.15cm] {distill train} (student.south);
+
+% =============================================================================
+% Layer 4: Evaluation & Web Platform  (anchored below teacher)
+% =============================================================================
+\coordinate (layer4anchor) at ([yshift=-\interlayer]teacher.south);
+
+\node[block, anchor=north, minimum width=2.4cm] (metrics_out) at (layer4anchor) {Metrics\\Snapshot};
+\node[block, right=of metrics_out, minimum width=2.5cm] (plots) {24+ Diagnostic\\Plots};
+\node[block, right=of plots, minimum width=2.4cm] (audio) {A/B Audio\\Compare};
+\node[block, right=of audio, minimum width=2.4cm] (abx) {ABX Blind\\Listening};
+
+\begin{scope}[on background layer]
+  \node[layerbox, fill=shulayer4, fit=(metrics_out)(abx)] (layer4box) {};
+\end{scope}
+
+\node[layertitle, above=\titleabove of layer4box.north, anchor=south] (layer4title)
+  {Evaluation \& Web Platform};
+
+\draw[arr] (refined.south) -- ++(0,-0.55) -| (plots.north);
+\draw[arr] (refined.south) -- ++(0,-0.55) -| (audio.north);
+\draw[arr] (plots) -- (metrics_out);
+\draw[arr] (audio) -- (abx);
+
+\end{tikzpicture}

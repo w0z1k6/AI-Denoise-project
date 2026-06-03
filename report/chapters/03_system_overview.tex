@@ -1,0 +1,202 @@
+\chapter{System Overview}
+\label{ch:system}
+
+This chapter presents the overall architecture of \projectshort{}. The system is organized as a three-layer preprocessing pipeline---scene analysis, adaptive mathematical denoising, and optional lightweight deep refinement---wrapped by a web-based evaluation platform. Both a command-line batch workflow and an interactive web application share the same core algorithm library.
+
+\section{Design Goals}
+\label{sec:design_goals}
+
+The platform was designed for local audio preprocessing research in an ASR-oriented setting (\chapref{ch:introduction}). Four engineering goals guided architectural decisions:
+
+\begin{itemize}
+  \item \textbf{Interpretability.} Processing stages should remain inspectable: routing decisions log explicit algorithm chains and human-readable reasons; OM-LSA/MCRA gains and noise PSD updates can be traced frame-by-frame; residual waveforms are exported for diagnosis.
+  \item \textbf{Adaptivity.} Enhancement should respond to scene characteristics---band-wise SNR imbalance, tonal structure, reverberation, and local SNR variability---via both internal bin-level adaptation and external algorithm routing.
+  \item \textbf{Efficiency.} Deployment should not require large-model inference. Mathematical denoising carries the main computational load; optional refinement uses a TinyResidualRefiner with only thousands of parameters. DeepFilterNet3 is confined to offline teacher generation during distillation training.
+  \item \textbf{Evaluability.} Every processed utterance should yield reproducible objective metrics (SNR, residual RMS, kurtosis), 24+ diagnostic plots, synchronized A/B audio comparison, and ABX blind listening statistics.
+\end{itemize}
+
+These goals motivate a hybrid design rather than a monolithic end-to-end neural enhancer or a single fixed classical denoiser.
+
+\section{Three-Layer Architecture}
+\label{sec:architecture}
+
+\figref{fig:system_architecture} summarizes the end-to-end pipeline. Each layer addresses a distinct sub-problem while passing structured artifacts to the next stage.
+
+
+\paragraph{Layer 1: Full-dimensional scene analysis.}
+For each benchmark scenario, clean speech, isolated noise, and the noisy mixture are analyzed jointly. Extracted statistics include time-domain RMS and zero-crossing rate (ZCR), Welch power spectral density, band-wise SNR (low/mid/high), local SNR heatmaps, and residual descriptors (kurtosis, spectral flatness). These quantities feed the ANASS parameter guidance framework (\chapref{ch:scene}) and inform routing thresholds (\chapref{ch:routing}).
+
+\paragraph{Layer 2: Adaptive mathematical denoising.}
+The rule router reads precomputed scene metrics (or accepts manual overrides) and selects one or more algorithms from a library of seven modules. Chains are composable: for example, subspace projection may precede chirp notch filtering, or adaptive notch filtering may precede NMF suppression. All chains terminate in a shared OM-LSA/MCRA back-end (\chapref{ch:algorithms}).
+
+\paragraph{Layer 3: Lightweight deep refinement.}
+When enabled, the TinyResidualRefiner (\chapref{ch:dl}) takes the routed STFT magnitude and the original noisy STFT magnitude as input and predicts a multiplicative residual mask. This stage closes part of the quality gap to the DeepFilterNet3 teacher without invoking the teacher at inference.
+
+\paragraph{Evaluation and web platform.}
+Enhanced audio, residual signals, JSON metrics, and Plotly plot specifications are exposed through the web application (\chapref{ch:web}) for interactive review and ABX testing.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+    \input{figures/system_architecture.tex}%
+  }
+  \caption{Three-layer architecture of \projectshort{} with evaluation platform. Solid arrows denote runtime data flow; the dashed path indicates offline teacher usage during distillation training only.}
+  \label{fig:system_architecture}
+\end{figure}
+\section{Data Flow}
+\label{sec:data_flow}
+
+\subsection{Batch Pipeline (CLI)}
+
+The offline workflow centered on \texttt{run\_pipeline.py} follows six steps:
+
+\begin{enumerate}
+  \item \textbf{Input.} A mono WAV file from \texttt{noisy\_testset/} (e.g., \texttt{scene01\_white\_snr15.wav}).
+  \item \textbf{Routing.} \texttt{router/rule\_router.py} loads \texttt{analysis/scene\_details/\{scene\}\_metrics.json}, checks \texttt{config/scene\_method\_overrides.json}, and returns a \texttt{RouteDecision} (chain + reason).
+  \item \textbf{Enhancement.} Each method in the chain is applied sequentially via \texttt{algorithms/*.py}, producing \texttt{*\_routed.wav} in \texttt{outputs/routed/}.
+  \item \textbf{Optional distillation.} \texttt{distill/infer\_student\_refine.py} loads \texttt{student\_runD.pt} and overwrites the routed output with a refined version in \texttt{outputs/distill\_refined/}.
+  \item \textbf{Logging.} Route metadata is written to \texttt{outputs/route\_log.json}.
+  \item \textbf{Evaluation.} \texttt{eval/batch\_eval\_metrics.py} and \texttt{eval/search\_best\_method\_per\_scene.py} compute RMS errors and search per-scene best methods.
+\end{enumerate}
+
+\subsection{Web Application Flow}
+
+\figref{fig:web_dataflow} depicts the interactive workflow. The user uploads audio through the React frontend; the FastAPI backend creates a task, stores the original WAV, and queues background processing.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.92\textwidth}{!}{%
+    \input{figures/web_dataflow.tex}%
+  }
+  \caption{Web application data flow. The frontend polls task status while the backend orchestrates denoising, optional refinement, and artifact generation.}
+  \label{fig:web_dataflow}
+\end{figure}
+
+Upon \texttt{POST /api/process}, the backend invokes \texttt{denoise\_runner.run\_denoise()} with the selected method (\texttt{auto}, explicit algorithm name, \texttt{noisereduce}, \texttt{wiener}, or \texttt{deepfilter}). If \texttt{run\_distill\_refine=true}, \texttt{distill\_refiner.refine\_with\_student()} post-processes the denoised WAV. Finally, \texttt{metrics\_service.build\_metrics\_and\_plots()} generates SNR statistics, residual descriptors, and 24+ grouped Plotly figures stored as JSON for the chart center.
+
+\subsection{Artifact Types}
+
+\begin{table}[H]
+  \centering
+  \caption{Primary runtime artifacts produced by the system.}
+  \label{tab:artifacts}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Artifact} & \textbf{Location / Format} & \textbf{Purpose} \\
+    \midrule
+    Original WAV       & \texttt{webapp/data/uploads/}     & Input preservation \\
+    Denoised WAV       & \texttt{webapp/data/processed/}   & Enhanced output \\
+    Residual WAV       & \texttt{webapp/data/processed/}   & $x - \hat{x}$ diagnosis \\
+    Metrics JSON       & \texttt{*\_metrics.json}          & SNR, RMS, kurtosis \\
+    Plots JSON         & \texttt{*\_plots.json}            & Plotly chart specs \\
+    Route log          & \texttt{route\_log.json}          & Chain + reason audit \\
+    Student checkpoint & \texttt{distill/checkpoints/}     & Refiner inference \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Repository Structure}
+\label{sec:repo_structure}
+
+Table~\ref{tab:repo_layout} maps major directories to functional roles. Separation between \texttt{analysis/}, \texttt{analysis/denoise\_selection/}, and \texttt{noisy\_testset/} keeps research artifacts, executable code, and benchmark audio distinct.
+
+\begin{table}[H]
+  \centering
+  \caption{Repository layout and responsibilities.}
+  \label{tab:repo_layout}
+  \begin{tabularx}{\textwidth}{l X}
+    \toprule
+    \textbf{Path} & \textbf{Description} \\
+    \midrule
+    \texttt{noisy\_testset/} & 15 noisy scenes + \texttt{clean\_reference.wav} \\
+    \texttt{analysis/reports/} & Full-dimensional scene analysis reports (Markdown) \\
+    \texttt{analysis/scene\_details/} & Per-scene JSON metrics consumed by the router \\
+    \texttt{analysis/priority\_plots/} & Key diagnostic figures referenced in reports \\
+    \texttt{analysis/denoise\_selection/algorithms/} & Seven denoising modules + shared STFT utilities \\
+    \texttt{analysis/denoise\_selection/router/} & Scene-aware rule router \\
+    \texttt{analysis/denoise\_selection/distill/} & Pair building, training, inference, checkpoints \\
+    \texttt{analysis/denoise\_selection/webapp/} & FastAPI backend + React frontend \\
+    \texttt{analysis/denoise\_selection/eval/} & Batch metrics and best-method search \\
+    \texttt{report/} & This LaTeX project report \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Software Stack}
+\label{sec:software_stack}
+
+Table~\ref{tab:software_stack} lists the primary technologies. Python 3.11+ with NumPy/SciPy handles signal processing; PyTorch supports distillation only; the web tier uses mainstream async API and SPA frameworks for reproducible deployment.
+
+\begin{table}[H]
+  \centering
+  \caption{Main software components.}
+  \label{tab:software_stack}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Layer} & \textbf{Technology} & \textbf{Role} \\
+    \midrule
+    Scene analysis   & Python, NumPy, SciPy, Matplotlib & Metrics, reports, plots \\
+    Denoising core   & Python modules (\texttt{algorithms/}) & STFT, OM-LSA/MCRA, specialized modules \\
+    Routing          & Python (\texttt{router/})           & Scene-aware chain selection \\
+    Distillation     & PyTorch                             & TinyResidualRefiner train/infer \\
+    Teacher (offline)& DeepFilterNet3 CLI                  & Teacher WAV generation \\
+    Backend API      & FastAPI, Uvicorn, python-multipart & REST endpoints, background tasks \\
+    Frontend UI      & React, TypeScript, Vite, Plotly.js  & Upload, charts, ABX, history \\
+    Audio I/O        & \texttt{soundfile}, optional \texttt{ffmpeg} & WAV/MP3/FLAC support \\
+    Containerization & Docker Compose                      & One-command local deployment \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Operating Modes}
+\label{sec:operating_modes}
+
+The same algorithm library supports three operating modes:
+
+\begin{enumerate}
+  \item \textbf{Automatic routing (\texttt{method=auto}).} Recommended default. The router selects a chain from scene metrics; suitable for benchmark reproduction and unknown user uploads whose filenames match benchmark conventions.
+  \item \textbf{Explicit algorithm selection.} Users force a single module or baseline (\texttt{omlsa}, \texttt{noisereduce}, \texttt{wiener}, \texttt{deepfilter}) for ablation studies.
+  \item \textbf{Auto + distill refinement.} Automatic routing followed by TinyResidualRefiner; balances quality and edge efficiency when the checkpoint is available.
+\end{enumerate}
+
+If DeepFilterNet CLI is unavailable, explicit \texttt{deepfilter} mode falls back to OM-LSA/MCRA; distillation inference silently skips when the checkpoint file is missing.
+
+\section{Benchmark Scenarios}
+\label{sec:benchmark}
+
+Evaluation uses 15 single-channel scenes paired with a shared clean reference utterance. Table~\ref{tab:benchmark_scenes} summarizes noise types and nominal SNR levels. Together they span stationary colored noise, tonal hum, impulsive events, speech-like interference, and reverberation---conditions representative of mobile ASR front-end challenges.
+
+\begin{table}[H]
+  \centering
+  \caption{Benchmark scenarios in \texttt{noisy\_testset/}.}
+  \label{tab:benchmark_scenes}
+  \small
+  \begin{tabular}{clll}
+    \toprule
+    \textbf{ID} & \textbf{Filename} & \textbf{Noise type} & \textbf{SNR (dB)} \\
+    \midrule
+    01 & \texttt{scene01\_white\_snr15.wav}              & White noise        & 15 \\
+    02 & \texttt{scene02\_white\_snr5.wav}               & White noise        & 5  \\
+    03 & \texttt{scene03\_pink\_snr10.wav}               & Pink noise         & 10 \\
+    04 & \texttt{scene04\_brown\_snr8.wav}               & Brown noise        & 8  \\
+    05 & \texttt{scene05\_hum50\_snr12.wav}              & 50\,Hz power hum   & 12 \\
+    06 & \texttt{scene06\_hum60\_snr12.wav}              & 60\,Hz power hum   & 12 \\
+    07 & \texttt{scene07\_highfreq\_hiss\_snr10.wav}     & High-frequency hiss& 10 \\
+    08 & \texttt{scene08\_lowfreq\_rumble\_snr10.wav}     & Low-frequency rumble& 10 \\
+    09 & \texttt{scene09\_chirp\_interference\_snr8.wav} & Chirp interference & 8  \\
+    10 & \texttt{scene10\_impulsive\_clicks\_snr9.wav}   & Impulsive clicks   & 9  \\
+    11 & \texttt{scene11\_intermittent\_bursts\_snr7.wav}& Intermittent bursts& 7  \\
+    12 & \texttt{scene12\_babble\_like\_snr5.wav}        & Babble-like noise  & 5  \\
+    13 & \texttt{scene13\_street\_combo\_snr6.wav}       & Street mixture     & 6  \\
+    14 & \texttt{scene14\_office\_fan\_snr9.wav}          & Office fan noise   & 9  \\
+    15 & \texttt{scene15\_reverb\_plus\_hiss\_snr10.wav} & Reverberation + hiss& 10 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Priority optimization scenarios identified by scene analysis---including \texttt{scene02}, \texttt{scene09}, \texttt{scene10}, \texttt{scene11}, and \texttt{scene12}---receive higher weight during distillation training and are emphasized in ablation discussions (\chapref{ch:experiments}).
+
+\section{Chapter Summary}
+\label{sec:system_summary}
+
+\projectshort{} integrates analysis, adaptive classical enhancement, optional distilled refinement, and interactive evaluation into a cohesive system suitable for local ASR preprocessing research. \chapref{ch:scene} details how Layer~1 statistics constrain algorithm design; \chapref{ch:algorithms} and \chapref{ch:routing} expand Layer~2; \chapref{ch:dl} and \chapref{ch:web} complete Layers~3 and the evaluation shell respectively.

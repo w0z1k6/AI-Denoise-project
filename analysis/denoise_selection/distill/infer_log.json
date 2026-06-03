@@ -1,0 +1,77 @@
+[
+  {
+    "scene": "scene01_white_snr15",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene01_white_snr15_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene01_white_snr15_distill_refined.wav"
+  },
+  {
+    "scene": "scene02_white_snr5",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene02_white_snr5_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene02_white_snr5_distill_refined.wav"
+  },
+  {
+    "scene": "scene03_pink_snr10",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene03_pink_snr10_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene03_pink_snr10_distill_refined.wav"
+  },
+  {
+    "scene": "scene04_brown_snr8",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene04_brown_snr8_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene04_brown_snr8_distill_refined.wav"
+  },
+  {
+    "scene": "scene05_hum50_snr12",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene05_hum50_snr12_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene05_hum50_snr12_distill_refined.wav"
+  },
+  {
+    "scene": "scene06_hum60_snr12",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene06_hum60_snr12_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene06_hum60_snr12_distill_refined.wav"
+  },
+  {
+    "scene": "scene07_highfreq_hiss_snr10",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene07_highfreq_hiss_snr10_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene07_highfreq_hiss_snr10_distill_refined.wav"
+  },
+  {
+    "scene": "scene08_lowfreq_rumble_snr10",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene08_lowfreq_rumble_snr10_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene08_lowfreq_rumble_snr10_distill_refined.wav"
+  },
+  {
+    "scene": "scene09_chirp_interference_snr8",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene09_chirp_interference_snr8_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene09_chirp_interference_snr8_distill_refined.wav"
+  },
+  {
+    "scene": "scene10_impulsive_clicks_snr9",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene10_impulsive_clicks_snr9_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene10_impulsive_clicks_snr9_distill_refined.wav"
+  },
+  {
+    "scene": "scene11_intermittent_bursts_snr7",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene11_intermittent_bursts_snr7_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene11_intermittent_bursts_snr7_distill_refined.wav"
+  },
+  {
+    "scene": "scene12_babble_like_snr5",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene12_babble_like_snr5_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene12_babble_like_snr5_distill_refined.wav"
+  },
+  {
+    "scene": "scene13_street_combo_snr6",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene13_street_combo_snr6_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene13_street_combo_snr6_distill_refined.wav"
+  },
+  {
+    "scene": "scene14_office_fan_snr9",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene14_office_fan_snr9_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene14_office_fan_snr9_distill_refined.wav"
+  },
+  {
+    "scene": "scene15_reverb_plus_hiss_snr10",
+    "input": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene15_reverb_plus_hiss_snr10_routed.wav",
+    "output": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\distill_refined\\scene15_reverb_plus_hiss_snr10_distill_refined.wav"
+  }
+]

@@ -1,0 +1,121 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Motivation}
+\label{sec:motivation}
+
+Automatic speech recognition (ASR) has become a core capability in smartphones, personal computers, voice assistants, and embedded devices. In production systems, however, recognition accuracy is rarely determined by the acoustic model alone. The quality of the \emph{front-end audio chain}---microphone capture, analog-to-digital conversion, and local preprocessing---often dominates performance in real environments. When users speak in cafés, vehicles, open offices, or reverberant rooms, the signal presented to the ASR engine is degraded by background noise, channel distortion, reverberation, and device-specific artifacts. From an engineering perspective, it is therefore natural to ask whether \emph{local audio preprocessing} on the client device can materially improve downstream ASR behavior before cloud-based or on-device decoding takes place.
+
+Local preprocessing refers to signal-conditioning stages executed on the smartphone or PC \emph{prior} to the ASR stage. Representative techniques include:
+\begin{itemize}
+  \item \textbf{Noise reduction / denoising} --- suppressing stationary and non-stationary interference while preserving intelligibility;
+  \item \textbf{Signal enhancement} --- shaping spectral content to emphasize speech-bearing regions;
+  \item \textbf{Voice activity detection (VAD)} --- segmenting speech from non-speech for efficient decoding;
+  \item \textbf{Echo cancellation and beamforming} --- mitigating self-interference and exploiting multi-microphone spatial cues;
+  \item \textbf{Audio clustering and speaker-oriented processing} --- organizing mixed audio streams in multi-talker settings.
+\end{itemize}
+Among these, denoising remains one of the most broadly applicable and technically rich components, because noise directly reduces the signal-to-noise ratio (SNR) and distorts short-time spectral structure that both classical and neural ASR systems rely upon.
+
+The engineering objective of such preprocessing is not merely aesthetic improvement of audio playback. Rather, the goal is to improve \emph{downstream} ASR performance along several axes:
+\begin{enumerate}
+  \item \textbf{Recognition accuracy} --- reducing word error rate (WER) by presenting a cleaner, more speech-like input;
+  \item \textbf{Robustness in noisy environments} --- maintaining usable performance when SNR is low or highly variable;
+  \item \textbf{Real-time performance} --- meeting latency and power budgets on mobile and edge hardware;
+  \item \textbf{Multi-speaker recognition quality} --- limiting cross-talk leakage and structured interference that confuse speaker-dependent models.
+\end{enumerate}
+These criteria create a design tension. Large deep-learning enhancers such as DeepFilterNet~\cite{deepfilternet2023} can achieve strong perceptual quality, but their model size, memory footprint, and inference cost may be difficult to justify as a always-on smartphone front-end. Conversely, classical methods such as spectral subtraction~\cite{boll1979} and MMSE-based estimators~\cite{ephraim1984} are lightweight and interpretable, yet they often fail under non-stationary noise, localized low-SNR frames, and structured interference (tonal hum, chirp, babble-like background).
+
+This project, \projectshort{} (\projectname{}), addresses that tension through a \emph{hybrid preprocessing pipeline} designed as a practical local denoising stage suitable for ASR-oriented investigation. Instead of committing to either a purely classical or purely deep approach, the system combines:
+\begin{itemize}
+  \item data-driven \emph{scene analysis} to characterize noise before processing;
+  \item an \emph{adaptive mathematical denoising} layer with seven composable algorithms and scene-aware routing;
+  \item an optional \emph{lightweight distillation refiner} that learns residual corrections from a strong teacher model without requiring heavy inference at deployment time.
+\end{itemize}
+The resulting platform is both a research vehicle and an engineering demo: it allows systematic study of whether structured preprocessing can improve objective speech quality metrics, residual statistics, and perceptual distinguishability---quantities that correlate with ASR robustness---under controlled noisy scenarios.
+
+\section{Problem Statement}
+\label{sec:problem}
+
+\subsection{Signal Model}
+
+We consider single-channel discrete-time observations
+\begin{equation}
+  y(n) = s(n) + d(n), \quad n = 0, 1, \ldots, N-1,
+  \label{eq:signal_model}
+\end{equation}
+where $s(n)$ is the target speech, $d(n)$ is additive interference, and $y(n)$ is the signal available to the preprocessing module. In a typical ASR pipeline, $y(n)$ would subsequently be converted to a feature sequence (e.g., log-mel filterbanks) and decoded by an acoustic model. The role of local preprocessing is to produce an enhanced estimate $\hat{s}(n)$ or an equivalent time--frequency representation that is more favorable for recognition.
+
+In practice, $d(n)$ may include:
+\begin{itemize}
+  \item \textbf{Wideband noise} (white, pink, or brown);
+  \item \textbf{Tonal interference} (50/60\,Hz hum and harmonics, fan noise);
+  \item \textbf{Structured narrowband events} (chirps, clicks, bursts);
+  \item \textbf{Speech-like background} (babble, street mixtures);
+  \item \textbf{Room effects} (reverberation combined with hiss).
+\end{itemize}
+Because noise statistics are unknown and often non-stationary, any fixed-parameter denoiser may simultaneously over-suppress speech-dominated frames and under-suppress noise-dominated frames.
+
+\subsection{Preprocessing Objective}
+
+Let $\mathcal{P}_\theta$ denote a preprocessing pipeline parameterized by algorithm choice, routing decisions, and optional refinement weights. The local enhancement problem can be stated as finding $\mathcal{P}_\theta$ that minimizes a composite cost:
+\begin{equation}
+  \min_{\theta}\; \mathbb{E}\bigl[\mathcal{L}(\hat{s}, s)\bigr]
+  \quad \text{subject to} \quad
+  \mathcal{C}_{\mathrm{lat}}(\mathcal{P}_\theta) \le C_0,
+  \label{eq:objective}
+\end{equation}
+where $\mathcal{L}$ measures distortion between enhanced speech $\hat{s}$ and clean reference $s$ when available, and $\mathcal{C}_{\mathrm{lat}}$ captures runtime/complexity constraints appropriate for edge deployment. When clean speech is unavailable at inference---the usual ASR deployment case---training and evaluation rely on proxy metrics (SNR improvement, residual RMS, kurtosis of residual, spectro-temporal artifacts) and perceptual tests such as ABX listening.
+
+\subsection{Research Questions}
+
+Motivated by the ASR preprocessing perspective above, this project investigates the following questions:
+
+\begin{enumerate}
+  \item[RQ1.] \textbf{Scene adaptivity:} Can data-driven scene characterization guide denoiser selection and parameterization more effectively than a single fixed algorithm?
+  \item[RQ2.] \textbf{Algorithm design:} Does an enhanced OM-LSA/MCRA core with soft speech-presence gating and MCRA-style noise tracking improve robustness across diverse noise types compared with classical spectral subtraction?
+  \item[RQ3.] \textbf{Hybrid refinement:} Can a tiny distilled residual network close part of the performance gap to a large teacher model while preserving low inference cost?
+  \item[RQ4.] \textbf{Evaluability:} Can an integrated analysis platform quantify preprocessing effects through objective metrics, diagnostic visualizations, and blind listening tests in a reproducible workflow?
+\end{enumerate}
+
+These questions are examined on a benchmark of 15 noisy speech scenes spanning the interference types listed above, with optional comparison to strong baselines including library denoisers and DeepFilterNet3 as a teacher model.
+
+\section{Scope and Positioning}
+\label{sec:scope}
+
+It is important to clarify the scope of this report. The implemented system is a \emph{local denoising and analysis platform} rather than a full ASR stack. Echo cancellation, beamforming, and multi-microphone fusion are acknowledged as related preprocessing topics but are not implemented here because the benchmark dataset is single-channel. Likewise, end-to-end WER evaluation would require coupling to a specific ASR engine and lexicon; such integration is identified as future work.
+
+Within this scope, denoising is treated as the primary preprocessing module whose output quality strongly influences downstream ASR behavior. The project therefore emphasizes:
+\begin{itemize}
+  \item \textbf{Interpretable enhancement} that can be inspected frame-by-frame;
+  \item \textbf{Adaptive routing} across noise regimes relevant to mobile use cases;
+  \item \textbf{Edge-compatible refinement} via knowledge distillation;
+  \item \textbf{Engineering-grade evaluation} through a web-based workflow supporting upload, batch processing, 24+ diagnostic plots, and ABX tests.
+\end{itemize}
+This positioning aligns with the broader theme of \emph{local audio preprocessing for better ASR performance}: even when the ASR decoder itself remains unchanged, improving the conditioning of its input can increase effective SNR, reduce misleading non-speech energy, and stabilize temporal features---all of which are prerequisites for accurate and robust recognition in noise.
+
+\section{Contributions}
+\label{sec:contributions}
+
+This report makes the following contributions:
+
+\begin{enumerate}
+  \item A \textbf{data-driven ANASS design framework} (Adaptive Noise Adaptive Spectral Subtraction) derived from full-dimensional analysis of 15 representative noise scenarios, linking time--frequency statistics to concrete parameter ranges for noise estimation, over-subtraction, and musical-noise suppression.
+  \item An \textbf{enhanced OM-LSA/MCRA denoising core} combining decision-directed prior SNR estimation, speech-presence-probability soft gating, MCRA-style minimum tracking, and gain-floor blending for robust single-channel enhancement.
+  \item A \textbf{modular algorithm library} of seven composable methods---including WPE dereverberation, adaptive notch filtering, subspace projection, Kalman--AR modeling, and NMF-based suppression---orchestrated by a scene-aware rule router with override support.
+  \item A \textbf{lightweight TinyResidualRefiner} trained by teacher--student distillation from DeepFilterNet3 to perform post-hoc residual mask correction on mathematically denoised outputs, enabling optional quality gains without teacher-model inference at deployment.
+  \item A \textbf{web-based analysis platform} (\projectshort{}) supporting audio upload, configurable processing, residual export, 24+ Plotly diagnostic charts, history management, and ABX blind listening evaluation for reproducible preprocessing studies.
+\end{enumerate}
+
+\section{Report Organization}
+\label{sec:organization}
+
+The remainder of this report is organized as follows.
+\chapref{ch:background} reviews classical speech enhancement, deep-learning denoisers, and knowledge distillation in the context of ASR-oriented preprocessing.
+\chapref{ch:system} describes the overall three-layer architecture, software stack, and benchmark scenarios.
+\chapref{ch:scene} presents full-dimensional scene analysis and the ANASS parameter guidance derived from it.
+\chapref{ch:algorithms} details the enhanced OM-LSA/MCRA core and specialized denoising modules.
+\chapref{ch:routing} explains the adaptive routing mechanism and the analysis--design--validation loop.
+\chapref{ch:dl} covers the TinyResidualRefiner architecture, distillation training, and edge deployment considerations.
+\chapref{ch:web} introduces the web platform, evaluation metrics, and ABX methodology.
+\chapref{ch:experiments} reports experimental results on the 15-scene benchmark.
+Finally, \chapref{ch:discussion} discusses limitations and comparisons with alternative approaches, and \chapref{ch:conclusion} concludes with future directions including ASR-coupled evaluation and real-time streaming deployment.

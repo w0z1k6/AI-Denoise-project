@@ -1,0 +1,370 @@
+\chapter{Adaptive Routing Mechanism}
+\label{ch:routing}
+
+Chapter~\chapref{ch:algorithms} established that heterogeneous interference requires \emph{physics-matched algorithm chains} rather than a single fixed enhancer. Chapter~\chapref{ch:scene} showed that global SNR and noise labels alone are insufficient: band-wise imbalance, local SNR tails, and separability statistics differ sharply across the 15 benchmark scenes. This chapter describes how \projectshort{} closes the loop between offline scene analysis and online denoising selection through a transparent, priority-ordered rule router (\texttt{router/rule\_router.py}), optional evaluation-driven overrides, and auditable chain execution in both CLI and web pipelines.
+
+\section{Motivation for Scene-Aware Routing}
+\label{sec:routing_motivation}
+
+\subsection{Why One Algorithm Is Not Enough}
+
+Fixed-parameter spectral subtraction fails when local SNR varies across time and frequency (Propositions~\ref{prop:musical_noise}--\ref{prop:scalar_alpha}, \chapref{ch:algorithms}). Even adaptive OM-LSA/MCRA assumes slowly varying noise PSD per bin; tonal hum, sweeping chirp, late reverberation, and speech-like babble violate distinct subsets of these assumptions (Propositions~\ref{prop:notch}--\ref{prop:chirp}). Theorem~\ref{thm:chain} formalizes the benefit of sequential, physics-matched composition: remove structured interference \emph{first}, then apply the unified OM-LSA back-end on a better-conditioned residual.
+
+A practical platform therefore needs a \emph{routing layer} that maps each incoming scene to an algorithm chain $\mathcal{C}=\{f_1,\ldots,f_m\}$ drawn from the method registry, without requiring the end user to inspect spectrograms or tune seven modules manually.
+
+\subsection{Design Goals}
+
+The routing mechanism in \projectshort{} is deliberately rule-based rather than learned, for four reasons aligned with the project research questions:
+\begin{enumerate}
+  \item \textbf{Interpretability} --- every decision exposes a human-readable \texttt{reason} string and named \texttt{route\_name}, supporting failure analysis and report writing.
+  \item \textbf{Traceability to analysis} --- rules consume the same JSON metrics produced by full-dimensional scene analysis (\chapref{ch:scene}), linking measurement to action.
+  \item \textbf{Low latency} --- routing is $O(1)$ JSON lookup plus a short conditional chain; no neural inference is required at route time.
+  \item \textbf{Extensibility} --- new scenes, thresholds, or chains can be added without retraining; grid-search overrides provide a data-driven refinement path when rules are suboptimal.
+\end{enumerate}
+
+\section{Router Architecture}
+\label{sec:router_arch}
+
+\subsection{RouteDecision Object}
+
+The router returns a \texttt{RouteDecision} dataclass with three fields:
+\begin{itemize}
+  \item \texttt{route\_name} --- canonical label (e.g., \texttt{hum\_stationary\_chain}, \texttt{base\_chain});
+  \item \texttt{chain} --- ordered list of method keys executed sequentially;
+  \item \texttt{reason} --- short audit string stored in \texttt{route\_log.json} and returned by the web API.
+\end{itemize}
+
+Chain execution follows Eq.~\eqref{eq:chain_compose}: each stage receives the waveform output of the previous stage at the same sample rate $f_s$.
+
+\subsection{Decision Priority}
+
+Routing applies decisions in strict priority order (Figure~\ref{fig:routing_flow}):
+\begin{enumerate}
+  \item \textbf{CLI force} --- \texttt{--force-method} (batch) or explicit method in the web UI bypasses all rules;
+  \item \textbf{Config override} --- per-scene entry in \texttt{scene\_method\_overrides.json};
+  \item \textbf{Metric and keyword rules} --- \texttt{choose\_route()} conditional tree;
+  \item \textbf{Default fallback} --- single-stage \texttt{base\_omlsa\_mcra}.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.95\textwidth}{!}{%
+    \input{figures/routing_flow.tex}%
+  }
+  \caption{Adaptive routing decision flow: force method, config override, metric rules, then OM-LSA fallback.}
+  \label{fig:routing_flow}
+\end{figure}
+
+\section{Routing Feature Vector}
+\label{sec:routing_features}
+
+\subsection{Metrics Input}
+
+For scene filename $s$ (e.g., \texttt{scene07\_highfreq\_hiss\_snr10.wav}), the router loads
+\begin{equation}
+  \mathcal{M}(s) = \text{JSON}\bigl(\texttt{analysis/scene\_details/}\,\mathrm{stem}(s)\,\texttt{\_metrics.json}\bigr),
+\end{equation}
+or the empty dict if the file is missing. Five scalar features drive automatic rules (Table~\ref{tab:routing_features}).
+
+\begin{table}[H]
+  \centering
+  \caption{Routing features extracted from per-scene metrics JSON.}
+  \label{tab:routing_features}
+  \small
+  \begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \textbf{Symbol} & \textbf{JSON path} & \textbf{Role in routing} \\
+    \midrule
+    $\mathrm{SNR}_{\mathrm{low}}$  & \texttt{frequency.band\_snr\_db.low}  & Low-band (0--300\,Hz) SNR; gates extreme low-SNR Kalman path \\
+    $\mathrm{SNR}_{\mathrm{mid}}$  & \texttt{frequency.band\_snr\_db.mid}  & Mid-band (300--3400\,Hz) SNR; paired with low band \\
+    $\mathrm{SNR}_{\mathrm{high}}$ & \texttt{frequency.band\_snr\_db.high} & High-band (3400--8000\,Hz) SNR; triggers hiss chain \\
+    $\rho_{<0}$                     & \texttt{time\_frequency.local\_snr.ratio\_lt0} & Fraction of STFT bins with local SNR $<0$\,dB \\
+    $\tau$                           & \texttt{noise\_type} (lowercased)     & Coarse noise label from analysis pipeline \\
+    $\kappa$                         & lowercase scene filename              & Keyword matching (\texttt{hum50}, \texttt{chirp}, etc.) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Band-wise SNR is computed in the analysis pipeline as
+\begin{equation}
+  \mathrm{SNR}_{\mathrm{band}} = 10\log_{10}\!\left(
+    \frac{\mathbb{E}[|S(k,t)|^2]}{\mathbb{E}[|D(k,t)|^2]+\varepsilon}
+  \right),
+\end{equation}
+averaged over STFT bins whose center frequencies fall in the band (\chapref{ch:scene}). Local-SNR ratio $\rho_{<0}$ summarizes the heavy left tail of bin-wise SNR distributions---for example, scene02 at 5\,dB global SNR has $\rho_{<0}=0.897$ despite mid-band SNR of 8.8\,dB, reflecting widespread masking (\chapref{ch:scene}).
+
+\subsection{Representative Feature Values}
+
+Table~\ref{tab:routing_feature_examples} lists features for scenes that activate distinct router branches. These values illustrate why filename keywords and band-wise SNR complement each other: scene15 has moderate high-band SNR ($-5.3$\,dB) but is routed to WPE by the \texttt{reverb\_plus\_hiss} filename token; scene07 triggers the hiss rule via both keyword and $\mathrm{SNR}_{\mathrm{high}}=-5.8$\,dB.
+
+\begin{table}[H]
+  \centering
+  \caption{Example routing features for selected benchmark scenes.}
+  \label{tab:routing_feature_examples}
+  \small
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Scene} & $\mathrm{SNR}_{\mathrm{low}}$ & $\mathrm{SNR}_{\mathrm{mid}}$ & $\mathrm{SNR}_{\mathrm{high}}$ & $\rho_{<0}$ \\
+    \midrule
+    scene02 (white 5\,dB)       & 5.9  & 8.8  & $-8.5$ & 0.897 \\
+    scene07 (high-freq hiss)    & 58.8 & 24.3 & $-5.8$ & 0.672 \\
+    scene09 (chirp)             & 13.4 & 10.8 & $-4.9$ & 0.168 \\
+    scene13 (street combo)      & 0.5  & 10.7 & $-7.1$ & 0.829 \\
+    scene15 (reverb + hiss)     & 26.2 & 18.1 & $-5.3$ & 0.708 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent
+\textit{Note:} The \texttt{noise\_type} field in current metrics files uses Chinese descriptive labels (e.g., ``high-frequency dominated colored noise''); the router additionally checks whether the substring \texttt{reverb} appears in $\tau$. Filename keywords remain the primary trigger for hum, chirp, and reverb scenes when labels are coarse.
+
+\section{Priority-Ordered Routing Rules}
+\label{sec:routing_rules}
+
+\subsection{Formal Decision Function}
+
+Let $\mathcal{F}$ denote the ordered list of routing predicates in \texttt{choose\_route()}. The automatic chain is
+\begin{equation}
+  \mathcal{C}(s) =
+  \begin{cases}
+    \mathcal{C}_i & \text{if predicate } P_i(\mathcal{M}(s),\kappa)\text{ is first true}, \\
+    \{\texttt{base\_omlsa\_mcra}\} & \text{otherwise (default fallback)}.
+  \end{cases}
+\end{equation}
+Predicates are evaluated top-to-bottom; the first match wins. Table~\ref{tab:routing_rules} lists all predicates with their chains and physical rationale.
+
+\begin{table}[H]
+  \centering
+  \caption{Priority-ordered routing policies implemented in \texttt{rule\_router.py}.}
+  \label{tab:routing_rules}
+  \small
+  \begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \textbf{Predicate $P_i$ (first match)} & \textbf{Chain $\mathcal{C}_i$} & \textbf{Rationale} \\
+    \midrule
+    \texttt{reverb\_plus\_hiss} $\in\kappa$ \textbf{or} \texttt{reverb} $\in\tau$
+      & \texttt{wpe\_omlsa}
+      & Late reverb predictable by WPE; OM-LSA inside module \\
+    \texttt{hum50}, \texttt{hum60}, or \texttt{office\_fan} $\in\kappa$
+      & \texttt{adaptive\_notch\_bank} $\rightarrow$ \texttt{nmf\_denoise}
+      & Notch tones; NMF separates residual templates (Theorem~\ref{thm:chain}) \\
+    \texttt{chirp\_interference} $\in\kappa$
+      & \texttt{subspace\_denoise} $\rightarrow$ \texttt{chirp\_notch}
+      & Reduce low-rank hiss; cancel moving ridge \\
+    \texttt{highfreq\_hiss} $\in\kappa$ \textbf{or} $\mathrm{SNR}_{\mathrm{high}} < -5$\,dB
+      & \texttt{subspace\_denoise} $\rightarrow$ \texttt{base\_omlsa\_mcra}
+      & High-band dominated masking \\
+    $\rho_{<0}>0.75$ \textbf{and} $\mathrm{SNR}_{\mathrm{low}}<8$ \textbf{and} $\mathrm{SNR}_{\mathrm{mid}}<8$
+      & \texttt{kalman\_ar}
+      & Extreme local SNR; linear AR subspace first \\
+    \texttt{street\_combo} or \texttt{babble\_like} $\in\kappa$
+      & \texttt{kalman\_ar} $\rightarrow$ \texttt{base\_omlsa\_mcra}
+      & Speech-like non-stationary interference \\
+    \textit{(else)}
+      & \texttt{base\_omlsa\_mcra}
+      & Broadband near-stationary default \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Threshold Interpretation}
+
+The high-band threshold $-5$\,dB aligns with scenes where speech intelligibility is limited by HF hiss despite acceptable mid-band SNR (scene07: mid 24.3\,dB, high $-5.8$\,dB). The low-SNR triple condition targets scenes where \emph{both} bands are severely degraded \emph{and} most STFT bins are below 0\,dB local SNR. Because $\mathrm{SNR}_{\mathrm{mid}}<8$\,dB is required, scene02 ($\mathrm{SNR}_{\mathrm{mid}}=8.8$\,dB) does \emph{not} activate the Kalman-only chain despite $\rho_{<0}=0.897$---it falls through to the default OM-LSA path unless overridden. Scene13 (\texttt{street\_combo}) is instead captured by the babble/street keyword rule.
+
+\begin{proposition}[Priority routing is deterministic and auditable]
+\label{prop:routing_deterministic}
+For fixed metrics file, override config, and force flag, $\mathcal{C}(s)$ is a pure function of $(s,\mathcal{M}(s))$. Logging \texttt{route\_name}, \texttt{chain}, and \texttt{reason} makes every benchmark output reproducible and diffable across router versions.
+\end{proposition}
+
+\section{Benchmark Mapping: Rules vs.\ Overrides}
+\label{sec:benchmark_mapping}
+
+\subsection{Automatic Routes Without Overrides}
+
+When \texttt{scene\_method\_overrides.json} is empty, Table~\ref{tab:scene_rule_routes} shows the chain selected by Algorithm~\ref{alg:choose_route} for each benchmark file. Keyword-driven scenes (hum, chirp, reverb, street) map cleanly to physics-matched chains; broadband scenes (white, pink, brown, impulsive) receive the default OM-LSA path.
+
+\begin{table}[H]
+  \centering
+  \caption{Rule-router chains when overrides are disabled (filename-only simulation).}
+  \label{tab:scene_rule_routes}
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Scene} & \textbf{route\_name} & \textbf{chain} \\
+    \midrule
+    scene01--04 (broadband)     & \texttt{base\_chain} & \texttt{base\_omlsa\_mcra} \\
+    scene05--06 (hum), scene14 (fan) & \texttt{hum\_stationary\_chain} & notch $\rightarrow$ NMF \\
+    scene07 (HF hiss)           & \texttt{hiss\_chain} & subspace $\rightarrow$ OM-LSA \\
+    scene08--11 (misc.)         & \texttt{base\_chain} & \texttt{base\_omlsa\_mcra} \\
+    scene09 (chirp)             & \texttt{chirp\_chain} & subspace $\rightarrow$ chirp \\
+    scene12 (babble)            & \texttt{nonstationary\_chain} & Kalman $\rightarrow$ OM-LSA \\
+    scene13 (street)            & \texttt{nonstationary\_chain} & Kalman $\rightarrow$ OM-LSA \\
+    scene15 (reverb)            & \texttt{wpe\_chain} & \texttt{wpe\_omlsa} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Evaluation-Driven Overrides}
+
+The script \texttt{eval/search\_best\_method\_per\_scene.py} performs exhaustive single-method search on the benchmark: for each scene it runs all seven modules against \texttt{clean\_reference.wav} and selects the minimum RMS error
+\begin{equation}
+  \hat{m}(s) = \arg\min_{m\in\mathcal{M}_{\mathrm{lib}}} \mathrm{RMS}\bigl(f_m(x_s)-x_{\mathrm{clean}}\bigr),
+\end{equation}
+where $\mathcal{M}_{\mathrm{lib}}$ is the method registry in \texttt{run\_pipeline.py}. Results are written to \texttt{best\_method\_search.json} and copied into \texttt{scene\_method\_overrides.json}, which takes priority over automatic rules.
+
+Table~\ref{tab:override_vs_rules} contrasts rule chains with current overrides. Overrides assign a \emph{single} best module per scene (not a full chain), reflecting the grid-search design. Several scenes differ from rule defaults---for example, scene05 (hum50) rules select notch$\rightarrow$NMF, but grid search favors \texttt{subspace\_denoise}; scene12 (babble) rules select Kalman$\rightarrow$OM-LSA, but search favors \texttt{wpe\_omlsa}.
+
+\begin{table}[H]
+  \centering
+  \caption{Current evaluation overrides vs.\ representative rule routes (RMS improvement vs.\ base OM-LSA).}
+  \label{tab:override_vs_rules}
+  \footnotesize
+  \begin{tabular}{llllr}
+    \toprule
+    \textbf{Scene} & \textbf{Rule chain (no override)} & \textbf{Override} & $\Delta$RMS \\
+    \midrule
+    scene01 white 15\,dB  & base & \texttt{nmf\_denoise} & 0.00015 \\
+    scene02 white 5\,dB   & base & \texttt{nmf\_denoise} & 0.00062 \\
+    scene05 hum50         & notch$\rightarrow$NMF & \texttt{subspace\_denoise} & 0.00082 \\
+    scene09 chirp         & subspace$\rightarrow$chirp & \texttt{chirp\_notch} & 0.00321 \\
+    scene12 babble        & Kalman$\rightarrow$OM-LSA & \texttt{wpe\_omlsa} & 0.00079 \\
+    scene15 reverb        & \texttt{wpe\_omlsa} & \texttt{wpe\_omlsa} & 0.00004 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{remark}[Rules vs.\ overrides in deployment]
+Automatic rules encode \emph{interpretable physics} and generalize to unseen filenames with similar keywords or band-SNR profiles. Overrides encode \emph{benchmark-specific optima} after listening-free RMS evaluation. Production deployments can ship with overrides enabled for known test sets while retaining rules for novel uploads; the web ``auto'' mode currently calls \texttt{choose\_route()} with overrides active when the config file is present.
+\end{remark}
+
+
+\section{Overrides, Forced Methods, and Ablation}
+\label{sec:overrides}
+
+\subsection{Manual Override File}
+
+\texttt{analysis/denoise\_selection/config/scene\_method\_overrides.json} maps full scene filenames to a single method key:
+\begin{verbatim}
+{
+  "scene09_chirp_interference_snr8.wav": "chirp_notch",
+  "scene15_reverb_plus_hiss_snr10.wav": "wpe_omlsa"
+}
+\end{verbatim}
+When a match exists, the router returns a one-element chain and skips all metric predicates---useful after grid search or subjective listening tests.
+
+\subsection{Forced Method (CLI and Debugging)}
+
+\texttt{run\_pipeline.py --force-method <key>} bypasses both overrides and rules, executing exactly one module for controlled ablation:
+\begin{verbatim}
+python run_pipeline.py --scene scene09_chirp_interference_snr8.wav \
+       --force-method base_omlsa_mcra
+\end{verbatim}
+This isolates the benefit of specialized front-ends (e.g., chirp vs.\ OM-LSA-only on scene09, $\Delta$RMS $=0.0032$ in Table~\ref{tab:override_vs_rules}).
+
+\subsection{Grid Search Workflow}
+
+\texttt{search\_best\_method\_per\_scene.py} implements the automatic override generator:
+\begin{enumerate}
+  \item Load \texttt{clean\_reference.wav} and each \texttt{scene*.wav} from \texttt{noisy\_testset/};
+  \item For each method $m\in\mathcal{M}_{\mathrm{lib}}$, compute $\mathrm{RMS}(f_m(x)-x_{\mathrm{clean}})$;
+  \item Record full error table, best method, and improvement over \texttt{base\_omlsa\_mcra};
+  \item Write \texttt{best\_method\_search.json} and refresh \texttt{scene\_method\_overrides.json}.
+\end{enumerate}
+Chained methods are \emph{not} searched combinatorially---chain design remains rule-driven (\chapref{ch:algorithms}, Table~\ref{tab:chains}); grid search optimizes single-module assignment per scene.
+
+\section{Analysis--Design--Validation Loop}
+\label{sec:ad_loop}
+
+The routing subsystem closes the ANASS analysis cycle described in \chapref{ch:scene}:
+
+\begin{enumerate}
+  \item \textbf{Analysis} --- Full-dimensional metrics JSON and Markdown reports characterize each scene (band SNR, $\rho_{<0}$, separability, noise type).
+  \item \textbf{Design} --- Engineers encode predicates $P_i$ linking metrics and keywords to physics-matched chains (Table~\ref{tab:routing_rules}); ANASS parameter ranges tune the shared OM-LSA back-end.
+  \item \textbf{Execution} --- \texttt{run\_pipeline.py} or the web runner applies $\mathcal{C}(s)$, writing \texttt{*\_routed.wav} and \texttt{route\_log.json}.
+  \item \textbf{Validation} --- \texttt{eval/} scripts compare routed outputs to clean reference (RMS, band SNR, residual kurtosis); grid search updates overrides where rules underperform.
+  \item \textbf{Refinement} --- Thresholds, keyword lists, or chain order are revised; distillation (\chapref{ch:dl}) optionally learns residuals on routed STFT statistics.
+\end{enumerate}
+
+This loop is intentionally lightweight: no router retraining is required when a new scene type is added---only new metrics, a rule branch, and optional override entry.
+
+\section{Web Platform Integration}
+\label{sec:routing_web}
+
+The FastAPI service (\texttt{webapp/backend/app/services/denoise\_runner.py}) exposes routing to end users via \texttt{method=auto}:
+\begin{itemize}
+  \item \texttt{auto} --- calls \texttt{choose\_route()} and executes the returned chain sequentially;
+  \item explicit keys (\texttt{wpe\_omlsa}, \texttt{chirp\_notch}, \ldots) --- single-module baselines;
+  \item external baselines (\texttt{noisereduce}, \texttt{wiener}, \texttt{deepfilter}) --- comparison methods outside the library registry.
+\end{itemize}
+Each response includes \texttt{route} and \texttt{reason} for frontend display and audit, consistent with CLI \texttt{route\_log.json} records (\chapref{ch:system}, Table~\ref{tab:artifacts}).
+
+\section{Limitations and Future Extensions}
+\label{sec:routing_limits}
+
+\begin{itemize}
+  \item \textbf{Single-method overrides} --- Grid search does not optimize chain sequences; hum scenes may benefit from notch$\rightarrow$NMF while overrides pick a single module.
+  \item \textbf{Keyword dependence} --- Scenes without descriptive filenames rely on metric thresholds; missing \texttt{*\_metrics.json} (e.g., scene01 in some builds) defaults all band features to zero.
+  \item \textbf{Language of noise labels} --- $\tau$ is not yet mapped from Chinese analysis labels to English tokens; filename keywords carry most semantic load.
+  \item \textbf{No online adaptation} --- Routes are fixed per file name before processing; future work could update $\mathcal{M}(s)$ from the first seconds of live audio.
+\end{itemize}
+
+Despite these limits, the combination of transparent rules, logged decisions, and evaluation-driven overrides satisfies the project goal of \emph{adaptive} yet \emph{explainable} algorithm selection without a heavyweight routing neural network.
+\section{Routing Algorithm}
+\label{sec:routing_algorithm}
+
+\begin{algorithm}[H]
+  \caption{Scene-aware route selection (\texttt{choose\_route})}
+  \label{alg:choose_route}
+  \begin{algorithmic}[1]
+    \Require Scene filename $s$, project root $R$, optional \texttt{force\_method}
+    \Ensure \texttt{RouteDecision}(\texttt{route\_name}, \texttt{chain}, \texttt{reason})
+    \If{\texttt{force\_method} is set}
+      \State \Return (\texttt{force\_}\textit{method}, [\textit{method}], ``forced by CLI argument'')
+    \EndIf
+    \State $\mathcal{O} \gets \text{read\_json}(R/\texttt{config/scene\_method\_overrides.json})$
+    \If{$s \in \mathcal{O}$}
+      \State \Return (\texttt{override\_}$\mathcal{O}[s]$, [\texttt{override\_}$\mathcal{O}[s]$, \texttt{base\_omlsa\_mcra}], ``scene override from config'')
+    \EndIf
+    \State $\mathcal{M} \gets \text{read\_metrics}(s)$;\quad extract $\mathrm{SNR}_{\mathrm{low,mid,high}}$, $\rho_{<0}$, $\tau$, $\kappa$
+    \If{\texttt{reverb\_plus\_hiss} $\in\kappa$ \textbf{or} \texttt{reverb} $\in\tau$}
+      \State \Return (\texttt{wpe\_chain}, [\texttt{wpe\_omlsa}], ``reverb-like scene'')
+    \EndIf
+    \If{\texttt{hum50/hum60/office\_fan} $\in\kappa$}
+      \State \Return (\texttt{hum\_stationary\_chain}, [\texttt{adaptive\_notch\_bank}, \texttt{nmf\_denoise}], \textit{tonal hum/fan})
+    \EndIf
+    \If{\texttt{chirp\_interference} $\in\kappa$}
+      \State \Return (\texttt{chirp\_chain}, [\texttt{subspace\_denoise}, \texttt{chirp\_notch}], \textit{chirp})
+    \EndIf
+    \If{\texttt{highfreq\_hiss} $\in\kappa$ \textbf{or} $\mathrm{SNR}_{\mathrm{high}}<-5$}
+      \State \Return (\texttt{hiss\_chain}, [\texttt{subspace\_denoise}, \texttt{base\_omlsa\_mcra}], \textit{HF hiss})
+    \EndIf
+    \If{$\rho_{<0}>0.75$ \textbf{and} $\mathrm{SNR}_{\mathrm{low}}<8$ \textbf{and} $\mathrm{SNR}_{\mathrm{mid}}<8$}
+      \State \Return (\texttt{low\_snr\_chain}, [\texttt{kalman\_ar}], \textit{very low local SNR})
+    \EndIf
+    \If{\texttt{street\_combo/babble\_like} $\in\kappa$}
+      \State \Return (\texttt{nonstationary\_chain}, [\texttt{kalman\_ar}, \texttt{base\_omlsa\_mcra}], \textit{babble/street})
+    \EndIf
+    \State \Return (\texttt{base\_chain}, [\texttt{base\_omlsa\_mcra}], ``default fallback'')
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Batch pipeline execution (\texttt{run\_pipeline.run\_one})}
+  \label{alg:run_pipeline}
+  \begin{algorithmic}[1]
+    \Require Input WAV path $p$, output directory, project root
+    \Ensure Enhanced WAV + route log record
+    \State $(x, f_s) \gets \mathrm{load\_audio}(p)$
+    \State $\mathit{decision} \gets \textsc{ChooseRoute}(p.\mathrm{name})$
+    \State $y \gets x$
+    \For{each method $m \in \mathit{decision.chain}$}
+      \State $y \gets \texttt{METHODS}[m](y, f_s)$
+    \EndFor
+    \State Save $y$ as \texttt{*\_routed.wav}; append $\{\mathit{chain}, \mathit{reason}\}$ to \texttt{route\_log.json}
+  \end{algorithmic}
+\end{algorithm}
+
+\section{Chapter Summary}
+\label{sec:routing_summary}
+
+This chapter presented the \projectshort{} adaptive routing layer: a priority-ordered rule router consuming band-wise SNR, local-SNR ratios, and scene keywords; auditable \texttt{RouteDecision} objects; CLI and web chain execution; and a grid-search override path that refines benchmark assignments. Automatic rules implement Theorem~\ref{thm:chain} at the system level by selecting physics-matched chains, while overrides capture per-scene RMS optima. \chapref{ch:dl} describes how routed outputs further feed lightweight distillation; \chapref{ch:experiments} quantifies end-to-end benchmark performance under routed and override configurations.

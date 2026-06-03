@@ -1,0 +1,411 @@
+\chapter{Web Platform and Evaluation Methodology}
+\label{ch:web}
+
+The \projectshort{} web application wraps the analysis pipeline (\chapref{ch:scene}), denoising library (\chapref{ch:algorithms}), rule router (\chapref{ch:routing}), and optional distillation refiner (\chapref{ch:dl}) in an interactive evaluation environment. Users upload noisy speech, select a processing mode, poll asynchronous jobs, inspect 28 diagnostic charts, compare waveforms, and log blind ABX judgments---all without editing Python scripts. This chapter describes platform architecture, REST workflow, objective and perceptual evaluation methodology, baseline comparison modes, and reproducibility procedures.
+
+\section{Platform Architecture}
+\label{sec:web_arch}
+
+\subsection{Decoupled Three-Tier Design}
+
+The web stack follows a classic decoupled pattern (\figref{fig:web_dataflow}, \chapref{ch:system}):
+
+\begin{itemize}
+  \item \textbf{Frontend (React + TypeScript + Vite)} --- file upload, method configuration, progress polling, Plotly chart rendering, WaveSurfer waveform playback, ABX panel, bilingual UI (English/Chinese via \texttt{i18n/}).
+  \item \textbf{Backend (FastAPI + Uvicorn)} --- REST API, background task execution, JSON task store, metrics/plot generation, static audio streaming.
+  \item \textbf{Storage (filesystem)} --- per-task WAV artifacts, metrics JSON, Plotly figure specs, task metadata JSON under \texttt{webapp/data/}.
+\end{itemize}
+
+The backend imports the same \texttt{analysis/denoise\_selection/algorithms/} and \texttt{router/} modules as the CLI pipeline; the frontend never runs denoising locally. This guarantees parity between batch benchmark runs and interactive sessions.
+
+\subsection{Directory Layout and Artifacts}
+
+Table~\ref{tab:web_storage} maps runtime directories. Each task receives a 12-character hex \texttt{task\_id} (\texttt{uuid4().hex[:12]}).
+
+\begin{table}[H]
+  \centering
+  \caption{Web platform storage layout (\texttt{webapp/data/}).}
+  \label{tab:web_storage}
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Path} & \textbf{Contents} \\
+    \midrule
+    \texttt{uploads/\{id\}\_original.wav} & Normalized mono upload (16-bit WAV) \\
+    \texttt{processed/\{id\}\_denoised.wav} & Enhanced output (possibly distill-refined) \\
+    \texttt{processed/\{id\}\_residual.wav} & $x - \hat{x}$ diagnostic signal \\
+    \texttt{plots/\{id\}\_metrics.json} & Scalar metrics (SNR, RMS, kurtosis, route) \\
+    \texttt{plots/\{id\}\_plots.json} & 28 Plotly figure definitions \\
+    \texttt{tasks/\{id\}.json} & Task state, paths, ABX records, bookmarks \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Task State Machine}
+
+Processing follows a finite-state workflow managed by \texttt{TaskStore}:
+
+\begin{center}
+\small
+\texttt{uploaded} $\rightarrow$ \texttt{queued} $\rightarrow$ \texttt{processing} $\rightarrow$ \{\texttt{completed}, \texttt{failed}\}
+\end{center}
+
+\texttt{POST /api/process} accepts tasks in \texttt{uploaded}, \texttt{failed}, or \texttt{completed} (re-run). Concurrent processing on a busy task returns HTTP 409. Progress fractions reported to the UI are $0.0$ (queued), $0.1$ (denoising), $0.55$ (metrics/plots), $1.0$ (done).
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+    \input{figures/web_dataflow.tex}%
+  }
+  \caption{Web application data flow (reproduced from \chapref{ch:system}). The frontend polls task status while the backend runs denoising and evaluation asynchronously.}
+  \label{fig:web_dataflow_ch8}
+\end{figure}
+
+\section{Frontend Application}
+\label{sec:frontend}
+
+\subsection{Routes and User Journey}
+
+React Router (\texttt{src/app/router.tsx}) defines six pages:
+
+\begin{table}[H]
+  \centering
+  \caption{Frontend routes and responsibilities.}
+  \label{tab:frontend_routes}
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Route} & \textbf{Purpose} \\
+    \midrule
+    \texttt{/}           & Landing / navigation hub \\
+    \texttt{/upload}     & File picker, method selection, distill toggle \\
+    \texttt{/progress}   & Poll \texttt{GET /api/task/\{id\}} every 1.5\,s \\
+    \texttt{/overview}   & Audio A/B/residual players, metrics chips, ABX, bookmarks \\
+    \texttt{/charts}     & Grouped Plotly gallery with PNG export \\
+    \texttt{/history}    & Past tasks; delete with artifact cleanup \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+After upload, \texttt{UploadConfigPage} calls \texttt{POST /api/upload} then \texttt{POST /api/process} and navigates to \texttt{/progress}. On \texttt{status=completed}, \texttt{TaskProgressPage} redirects to \texttt{/overview}.
+
+\subsection{UI Components}
+
+Key interactive components include:
+\begin{itemize}
+  \item \texttt{AudioComparePlayer} --- synchronized playback of original, denoised, and residual URLs;
+  \item \texttt{WaveformPanel} --- WaveSurfer.js visualization;
+  \item \texttt{ChartCenterPage} --- collapsible plot groups, keyword filter, \texttt{Plotly.downloadImage} PNG export;
+  \item \texttt{ABXTestPanel} --- random $X\in\{A,B\}$ assignment per trial, cumulative accuracy display;
+  \item \texttt{BookmarkList} --- timestamped listening notes via \texttt{POST /api/bookmark/\{id\}}.
+\end{itemize}
+
+The UI uses a glassmorphism design system (\texttt{styles/glass.css}, \texttt{tokens.css}) with light/dark theme support.
+
+\section{REST API and Processing Pipeline}
+\label{sec:api_workflow}
+
+\subsection{Endpoint Reference}
+
+Table~\ref{tab:api_endpoints} lists all public endpoints. OpenAPI documentation is served at \texttt{http://localhost:8000/docs}.
+
+\begin{table}[H]
+  \centering
+  \caption{REST API endpoints (\texttt{webapp/backend/app/routers/}).}
+  \label{tab:api_endpoints}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \textbf{Method \& path} & \textbf{Handler} & \textbf{Description} \\
+    \midrule
+    \texttt{GET /health} & \texttt{main.py} & Service liveness probe \\
+    \texttt{POST /api/upload} & \texttt{upload.py} & Multipart upload; create task \\
+    \texttt{POST /api/process} & \texttt{process.py} & Queue background denoise job \\
+    \texttt{GET /api/task/\{id\}} & \texttt{task.py} & Status, progress, error message \\
+    \texttt{GET /api/history} & \texttt{task.py} & List all tasks (newest first) \\
+    \texttt{DELETE /api/history/\{id\}} & \texttt{task.py} & Delete task + WAV/JSON files \\
+    \texttt{GET /api/result/\{id\}/metrics} & \texttt{result.py} & Scalar metrics JSON \\
+    \texttt{GET /api/result/\{id\}/plots} & \texttt{result.py} & Plotly plot groups JSON \\
+    \texttt{GET /api/result/\{id\}/audio/*} & \texttt{result.py} & Stream \texttt{original|denoised|residual} WAV \\
+    \texttt{POST /api/abx/\{id\}/record} & \texttt{abx.py} & Log ABX trial \\
+    \texttt{GET /api/abx/\{id\}/stats} & \texttt{abx.py} & Aggregate ABX accuracy \\
+    \texttt{POST /api/bookmark/\{id\}} & \texttt{abx.py} & Add listening bookmark \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Process Request Schema}
+
+\texttt{ProcessRequest} (\texttt{schemas/models.py}) fields:
+\begin{itemize}
+  \item \texttt{task\_id} --- required;
+  \item \texttt{method} --- default \texttt{auto} (see Section~\ref{sec:baselines});
+  \item \texttt{run\_distill\_refine} --- optional TinyResidualRefiner after routing (\chapref{ch:dl});
+  \item \texttt{noisereduce\_strength} --- $[0.1,1.0]$ for \texttt{noisereduce} baseline;
+  \item \texttt{deepfilter\_model\_dir} --- optional DeepFilterNet3 model path;
+  \item \texttt{stft\_nfft}, \texttt{stft\_hop} --- reserved for future STFT UI tuning (currently unused in runner).
+\end{itemize}
+
+\subsection{Background Processing Algorithm}
+
+\texttt{process.py} executes denoising in a FastAPI \texttt{BackgroundTasks} worker:
+
+\begin{algorithm}[H]
+  \caption{Web processing pipeline (\texttt{\_do\_process})}
+  \label{alg:web_process}
+  \begin{algorithmic}[1]
+    \Require \texttt{ProcessRequest} $req$
+    \State \texttt{status} $\gets$ \texttt{processing}, \texttt{progress} $\gets 0.1$
+    \State $(\hat{x}, r, \mathit{meta}) \gets \textsc{RunDenoise}(\mathit{input}, req.\mathit{method})$
+    \If{$req.\mathit{run\_distill\_refine}$}
+      \State $\hat{x} \gets \textsc{RefineWithStudent}(\hat{x}, \mathit{input}, \texttt{student\_runD.pt})$
+      \State $r \gets \mathit{input} - \hat{x}$
+    \EndIf
+    \State Save $\hat{x}$, $r$ as WAV; \texttt{progress} $\gets 0.55$
+    \State $(M, P) \gets \textsc{BuildMetricsAndPlots}(\mathit{input}, \hat{x}, r, \mathit{meta.route})$
+    \State Write \texttt{*\_metrics.json}, \texttt{*\_plots.json}; \texttt{status} $\gets$ \texttt{completed}
+  \end{algorithmic}
+\end{algorithm}
+
+\texttt{run\_denoise()} (\texttt{denoise\_runner.py}) dispatches \texttt{method} to the algorithm registry, external baselines, or \texttt{choose\_route()} for \texttt{auto}. Each response includes \texttt{route} (list of module keys) and \texttt{reason} for audit.
+
+\subsection{Upload and Format Handling}
+
+\texttt{FileStore.save\_upload()} accepts \texttt{.wav}, \texttt{.flac}, \texttt{.mp3}. Non-WAV formats convert via \texttt{soundfile} or fallback \texttt{ffmpeg}. Upload size is configurable (\texttt{MAX\_UPLOAD\_MB}, default 64). All internal processing uses mono float32 WAV at native sample rate.
+
+\section{Evaluation Metrics}
+\label{sec:metrics}
+
+\subsection{Objective Metrics}
+
+\texttt{metrics\_service.build\_metrics\_and\_plots()} computes scalar summaries stored in \texttt{*\_metrics.json}:
+
+\paragraph{RMS levels.}
+\begin{equation}
+  \mathrm{RMS}(x) = \sqrt{\frac{1}{N}\sum_{n=0}^{N-1} x^2(n) + \varepsilon}.
+\end{equation}
+Reported for original $x$, denoised $\hat{x}$, and residual $r = x - \hat{x}$.
+
+\paragraph{Prefix-based SNR estimate.}
+When clean reference is unavailable (typical for user uploads), input/output SNR uses the first $0.5$\,s as a noise-dominated prefix:
+\begin{equation}
+  \mathrm{SNR}_{\mathrm{est}} = 10\log_{10}\!\left(
+    \frac{\mathbb{E}[x^2(n \ge n_0)]}{\mathbb{E}[x^2(n < n_0)] + \varepsilon}
+  \right), \quad n_0 = 0.5\,f_s.
+  \label{eq:prefix_snr}
+\end{equation}
+$\Delta\mathrm{SNR} = \mathrm{SNR}_{\mathrm{out}} - \mathrm{SNR}_{\mathrm{in}}$. This heuristic aligns with short utterances where leading silence or noise-only segments exist; it differs from benchmark RMS against \texttt{clean\_reference.wav} used in \texttt{distill\_eval.json} (\chapref{ch:dl}).
+
+\paragraph{Residual statistics.}
+Fisher kurtosis and skewness of $r$ quantify musical-noise heaviness (high kurtosis $\Rightarrow$ impulsive residual peaks, cf.\ Proposition~\ref{prop:musical_noise}).
+
+\paragraph{Routing metadata.}
+\texttt{method} (user selection) and \texttt{route} (executed chain) are persisted for reproducibility.
+
+\begin{table}[H]
+  \centering
+  \caption{Metrics JSON schema (selected fields).}
+  \label{tab:metrics_schema}
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Field} & \textbf{Meaning} \\
+    \midrule
+    \texttt{sample\_rate}, \texttt{length\_sec} & Audio duration metadata \\
+    \texttt{method}, \texttt{route} & User mode and executed algorithm chain \\
+    \texttt{rms.original/denoised/residual} & RMS levels \\
+    \texttt{snr\_db.input\_est/output\_est/delta} & Prefix SNR (\eqref{eq:prefix_snr}) \\
+    \texttt{residual\_stats.kurtosis/skewness} & Residual distribution shape \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Visualization: 28 Plotly Charts}
+
+Plots are precomputed server-side as JSON figure specs (no Matplotlib in the API path). Five groups totaling \textbf{28 plots}:
+
+\begin{table}[H]
+  \centering
+  \caption{Diagnostic plot catalog (\texttt{metrics\_service.py}).}
+  \label{tab:plot_catalog}
+  \footnotesize
+  \begin{tabular}{clp{6.2cm}}
+    \toprule
+    \textbf{Group} & \textbf{Count} & \textbf{Representative plots} \\
+    \midrule
+    \texttt{time\_domain}       & 5 & Waveform compare/zoom, energy envelope, ZCR \\
+    \texttt{frequency\_domain}  & 5 & Amplitude spectrum, PSD, band energy bars, centroid/bandwidth/rolloff \\
+    \texttt{time\_frequency}   & 6 & STFT dB heatmaps (original, denoised, residual $\times$ 2 naming) \\
+    \texttt{quality\_error}     & 8 & Global SNR bars, frame SNR curve, residual RMS hist, kurtosis/skew, flatness, radar \\
+    \texttt{stat\_distribution} & 4 & Amplitude histogram, frame RMS boxplot, CDF, energy--ZCR scatter \\
+    \midrule
+    \textbf{Total}              & 28 & Rendered client-side via \texttt{react-plotly.js} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Band energy uses six Welch bands: 0--200, 200--500, 500--1000, 1000--2000, 2000--4000, 4000--8000\,Hz. STFT parameters match the denoising library ($N_{\mathrm{FFT}}=512$, hop 128). The \texttt{algorithm\_radar} plot provides a compact multi-metric scorecard indexed by output SNR, $\Delta$SNR, residual RMS, and skewness.
+
+\subsection{Benchmark vs.\ Web Metrics}
+
+For the 15-scene test set, offline scripts (\texttt{eval/}, \texttt{distill/eval\_distill\_ab.py}) compute RMS against \texttt{clean\_reference.wav}. The web platform's prefix SNR is designed for \emph{unknown} uploads without clean labels. When evaluating benchmark scenes through the web UI, users should cross-check residual RMS and listening tests against offline JSON logs for ground-truth numeric comparison.
+
+\section{Perceptual Evaluation (ABX)}
+\label{sec:abx}
+
+\subsection{Protocol}
+
+The ABX panel implements a simplified blind discrimination test:
+\begin{enumerate}
+  \item \textbf{A} --- original noisy upload (reference);
+  \item \textbf{B} --- denoised output;
+  \item \textbf{X} --- randomly chosen to match A or B with probability $0.5$ (frontend \texttt{useMemo} resampled after each trial).
+\end{enumerate}
+The listener selects whether $X$ equals A or B. The backend records \texttt{\{x\_is, guess, correct\}} in the task JSON via \texttt{POST /api/abx/\{task\_id\}/record}.
+
+\subsection{Aggregated Statistics}
+
+After $N$ trials:
+\begin{equation}
+  \mathrm{accuracy} = \frac{1}{N}\sum_{i=1}^{N} \mathbb{1}[\mathit{guess}_i = \mathit{x\_is}_i].
+\end{equation}
+\texttt{GET /api/abx/\{id\}/stats} returns \texttt{\{total, correct, accuracy\}}. For $N\ge 20$ trials, binomial significance against chance ($p=0.5$) can be assessed; the platform does not enforce a minimum trial count, leaving protocol rigor to the experimenter.
+
+\begin{remark}[Development-mode label reveal]
+The frontend displays the current $X$ assignment (\texttt{abxDebug}) to simplify debugging during development. For formal listening tests, this label should be hidden or the ABX component replaced with a double-blind variant.
+\end{remark}
+
+\subsection{Bookmarks}
+
+\texttt{POST /api/bookmark/\{id\}} stores \texttt{\{time\_sec, note\}} entries for marking audible artifacts (musical noise bursts, consonant clipping, residual tones). Bookmarks support structured qualitative reporting alongside objective plots.
+
+\section{Baselines and Processing Modes}
+\label{sec:baselines}
+
+Table~\ref{tab:web_methods} maps \texttt{ProcessRequest.method} values to implementations. The upload UI exposes a subset; the API accepts any key handled by \texttt{run\_denoise()}.
+
+\begin{table}[H]
+  \centering
+  \caption{Denoising modes available through the web API.}
+  \label{tab:web_methods}
+  \small
+  \begin{tabularx}{\textwidth}{l X l}
+    \toprule
+    \textbf{Method key} & \textbf{Behavior} & \textbf{Category} \\
+    \midrule
+    \texttt{auto} & \texttt{choose\_route()} + chain execution & Routed math (\chapref{ch:routing}) \\
+    \texttt{omlsa} & Alias for \texttt{base\_omlsa\_mcra} & Core OM-LSA/MCRA \\
+    \texttt{base\_omlsa\_mcra} & Single-module OM-LSA/MCRA & Library module \\
+    \texttt{kalman\_ar}, \texttt{subspace\_denoise}, \ldots & Individual registry modules & Library module \\
+    \texttt{noisereduce} & \texttt{noisereduce} Python library & External baseline \\
+    \texttt{wiener} & SciPy \texttt{wiener} ($15$-tap) & Classical baseline \\
+    \texttt{deepfilter} & DeepFilterNet CLI; fallback OM-LSA & Teacher / heavy DL \\
+    \texttt{auto} + \texttt{run\_distill\_refine} & Routed output + \texttt{student\_runD.pt} & Hybrid (\chapref{ch:dl}) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Recommended comparison protocol.}
+For systematic studies on the benchmark set:
+\begin{enumerate}
+  \item Run \texttt{auto} without distillation (routed math baseline);
+  \item Run \texttt{auto} with \texttt{run\_distill\_refine=true} (hybrid);
+  \item Run \texttt{deepfilter} or offline teacher WAVs (upper-bound reference);
+  \item Optionally force single modules (\texttt{kalman\_ar}, \texttt{chirp\_notch}, etc.) for ablation.
+\end{enumerate}
+Fixed-parameter spectral subtraction metrics from scene analysis reports (\chapref{ch:scene}) serve as offline classical baselines but are not exposed as a separate web mode.
+
+\section{Error Handling and Security Notes}
+\label{sec:web_errors}
+
+\texttt{ApiError} exceptions map to JSON error bodies with HTTP status codes (400 bad upload, 404 missing task, 409 busy task, 500 unknown method). CORS is restricted to localhost origins by default (\texttt{CORS\_ORIGINS}). The platform is intended for local/lab deployment: there is no authentication layer, rate limiting, or virus scanning---uploads should be trusted research audio only.
+
+\section{Reproducibility}
+\label{sec:reproducibility}
+
+\subsection{Local Development Setup}
+
+\paragraph{Backend.}
+\begin{verbatim}
+cd analysis/denoise_selection/webapp/backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+\end{verbatim}
+Run from the repository root context so \texttt{denoise\_runner.py} can import \texttt{analysis/denoise\_selection/algorithms/}. Backend dependencies: FastAPI, NumPy, SciPy, SoundFile, PyTorch (distill refiner), optional \texttt{noisereduce}.
+
+\paragraph{Frontend.}
+\begin{verbatim}
+cd analysis/denoise_selection/webapp/frontend
+npm install
+npm run dev
+\end{verbatim}
+Default URLs: frontend \texttt{http://localhost:5173}, API \texttt{http://localhost:8000}, Swagger \texttt{/docs}.
+
+\paragraph{Environment variables.}
+Copy \texttt{webapp/.env.example} to \texttt{.env}:
+\begin{itemize}
+  \item \texttt{APP\_DATA\_DIR} --- artifact root (default \texttt{webapp/data});
+  \item \texttt{MAX\_UPLOAD\_MB} --- upload cap (64);
+  \item \texttt{CORS\_ORIGINS} --- comma-separated frontend origins;
+  \item \texttt{VITE\_API\_BASE\_URL} --- frontend API base (Docker: \texttt{http://localhost:8000}).
+\end{itemize}
+
+\subsection{Docker Compose Deployment}
+
+\begin{verbatim}
+cd analysis/denoise_selection/webapp
+copy .env.example .env    # Windows; use cp on Unix
+docker compose up --build
+\end{verbatim}
+
+\texttt{docker-compose.yml} builds:
+\begin{itemize}
+  \item \textbf{backend} --- \texttt{python:3.11-slim}, mounts repository at \texttt{/workspace}, port 8000;
+  \item \textbf{frontend} --- \texttt{node:20-alpine}, Vite dev server, port 5173.
+\end{itemize}
+Volume mounting preserves algorithm code, checkpoints, and \texttt{webapp/data} across container restarts.
+
+\subsection{CLI Equivalents (Batch Reproduction)}
+
+The web platform mirrors these command-line workflows:
+
+\begin{table}[H]
+  \centering
+  \caption{Web actions and CLI equivalents.}
+  \label{tab:cli_equiv}
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Web action} & \textbf{CLI command} \\
+    \midrule
+    Auto routing          & \texttt{python run\_pipeline.py --all} \\
+    Force single method   & \texttt{run\_pipeline.py --force-method <key>} \\
+    Build distill pairs   & \texttt{python distill/build\_distill\_pairs.py} \\
+    Train student         & \texttt{python distill/train\_student\_distill.py --tag runD} \\
+    Infer distill refine  & \texttt{python distill/infer\_student\_refine.py --checkpoint ...} \\
+    AB RMS evaluation     & \texttt{python distill/eval\_distill\_ab.py} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Automated Tests}
+
+\begin{verbatim}
+cd analysis/denoise_selection/webapp/backend && pytest
+cd analysis/denoise_selection/webapp/frontend && npm test
+\end{verbatim}
+
+Backend tests cover API contracts; frontend Vitest covers \texttt{ABXTestPanel} interaction logic.
+
+\subsection{Optional Dependencies}
+
+\begin{itemize}
+  \item \textbf{ffmpeg} --- MP3/FLAC conversion when \texttt{soundfile} decode fails;
+  \item \textbf{deepFilter} CLI + \texttt{models/DeepFilterNet3/} --- \texttt{deepfilter} mode and teacher generation;
+  \item \textbf{student\_runD.pt} --- required for \texttt{run\_distill\_refine}; silently skipped if missing.
+\end{itemize}
+
+\section{Chapter Summary}
+\label{sec:web_summary}
+
+This chapter documented the \projectshort{} evaluation web platform: a FastAPI backend executing the shared denoising library asynchronously, a React frontend for upload/configuration/visualization/ABX, filesystem-backed task storage, 28 Plotly diagnostic charts, prefix-based SNR metrics for label-free uploads, and Docker/local reproducibility paths. The platform closes the analysis--design--validation loop (\chapref{ch:routing}) by making routed chains, residuals, and listening judgments inspectable in one session. \chapref{ch:experiments} reports aggregate benchmark numbers; \chapref{ch:discussion} interprets trade-offs between web metrics and offline clean-reference RMS.

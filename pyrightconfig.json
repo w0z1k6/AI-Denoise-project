@@ -1,0 +1,13 @@
+{
+  "venvPath": "C:\\Users\\18076\\miniconda3\\envs",
+  "venv": "dfnet311",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [
+        "analysis/denoise_selection",
+        "analysis/denoise_selection/webapp/backend"
+      ]
+    }
+  ]
+}

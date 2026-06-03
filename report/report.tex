@@ -1,0 +1,167 @@
+% ============================================================================
+% Intelligent Audio Denoising Analysis Platform — Project Report
+% Compile: pdflatex report.tex && biber report && pdflatex report.tex && pdflatex report.tex
+%          (or: latexmk -pdf -bibtex report.tex)
+% ============================================================================
+
+\documentclass[10pt,a4paper,oneside,openany]{report}
+
+% --- Page layout ---
+\usepackage[
+  top=2cm,
+  bottom=2cm,
+  left=1.5cm,
+  right=1.5cm,
+  headheight=15pt,
+]{geometry}
+
+% --- Typography & language ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[english]{babel}
+
+% --- Mathematics ---
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+
+% --- Figures & tables ---
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[table]{xcolor}
+\definecolor{shublue}{HTML}{003366}
+\definecolor{shugray}{HTML}{555555}
+\definecolor{shulayer1}{HTML}{E8F0F8}
+\definecolor{shulayer2}{HTML}{E6F4EA}
+\definecolor{shulayer3}{HTML}{FFF4E6}
+\definecolor{shulayer4}{HTML}{F3EEF8}
+
+% --- TikZ diagrams ---
+\usepackage{tikz}
+\usetikzlibrary{
+  shapes.geometric,
+  arrows.meta,
+  positioning,
+  fit,
+  backgrounds,
+  calc,
+}
+
+% --- Algorithms ---
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% --- Code listings ---
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{shugray},
+  keywordstyle=\color{shublue}\bfseries,
+  commentstyle=\color{shugray}\itshape,
+  captionpos=b,
+  tabsize=2,
+}
+
+% --- References & links ---
+\usepackage[
+  colorlinks=true,
+  linkcolor=shublue,
+  citecolor=shublue,
+  urlcolor=shublue,
+  bookmarksnumbered=true,
+]{hyperref}
+\usepackage[backend=biber,style=ieee,sorting=none,maxbibnames=6]{biblatex}
+\addbibresource{references.bib}
+
+% --- Headers & footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\small\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% --- Theorem environments ---
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{proposition}{Proposition}[chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+\newtheorem{remark}{Remark}[chapter]
+
+% --- Custom commands ---
+\newcommand{\projectname}{Intelligent Audio Denoising Analysis Platform}
+\newcommand{\projectshort}{Denoise Selection}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\figref}[1]{Figure~\ref{#1}}
+\newcommand{\tabref}[1]{Table~\ref{#1}}
+\newcommand{\secref}[1]{Section~\ref{#1}}
+\newcommand{\chapref}[1]{Chapter~\ref{#1}}
+\newcommand{\eqnref}[1]{Equation~(\ref{#1})}
+
+% --- Metadata ---
+\title{%
+  \textbf{\projectname}\\[0.6em]
+  \large A Data-Driven Adaptive Denoising Framework with Lightweight Deep Refinement
+}
+\author{%
+  \textbf{Your Name}\\[0.3em]
+  \small School of Computer Engineering and Science\\
+  \small Shanghai University\\[0.3em]
+  \small \texttt{your.email@shu.edu.cn}
+}
+\date{\today}
+
+% ============================================================================
+\begin{document}
+% ============================================================================
+
+% --- Front matter ---
+\pagenumbering{roman}
+\input{frontmatter/titlepage}
+\input{frontmatter/abstract}
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+% --- Main matter ---
+\pagenumbering{arabic}
+
+\input{chapters/01_introduction}
+\input{chapters/02_background}
+\input{chapters/03_system_overview}
+\input{chapters/04_scene_analysis}
+\input{chapters/05_denoising_algorithms}
+\input{chapters/06_adaptive_routing}
+\input{chapters/07_lightweight_dl}
+\input{chapters/08_web_platform}
+\input{chapters/09_experiments}
+\input{chapters/10_discussion}
+\input{chapters/11_conclusion}
+
+% --- Back matter ---
+\appendix
+\input{appendix/appendix_a}
+\input{appendix/appendix_b}
+
+\clearpage
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}

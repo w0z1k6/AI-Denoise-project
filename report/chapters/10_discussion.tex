@@ -1,0 +1,128 @@
+\chapter{Discussion}
+\label{ch:discussion}
+
+This chapter interprets the experimental findings of \chapref{ch:experiments} in the broader context of ASR-oriented local preprocessing (\chapref{ch:introduction}). We examine the hybrid system's position on the interpretability--performance frontier, articulate limitations with supporting evidence, compare against representative alternative pipelines, and distill design lessons from the scene-analysis workflow (\chapref{ch:scene}).
+
+\section{Interpretability vs.\ Performance}
+\label{sec:interp_vs_perf}
+
+The central engineering tension in \projectshort{} is whether a deployable front-end can approach the quality of a large neural enhancer while remaining inspectable, modular, and inexpensive to run on CPU-only edge hardware. The three-layer design explicitly trades a bounded gap to the DeepFilterNet3 teacher for transparency and low latency.
+
+\paragraph{What remains interpretable.}
+Scene analysis produces human-readable reports: band-wise SNR, local-SNR histograms, Cohen's $d$ separability, and baseline fixed-subtraction residual kurtosis (\chapref{ch:scene}). Routing emits structured logs (\texttt{route\_name}, \texttt{chain}, \texttt{reason}) so every benchmark WAV can be traced to a physics-matched module sequence (\chapref{ch:routing}). Mathematical stages expose STFT-domain gains, notch frequencies, NMF activations, and WPE coefficients---quantities an engineer can correlate with spectrograms (Figures~\ref{fig:spectrogram_comparison}--\ref{fig:spec_scene15}). The distillation refiner is small enough to audit (2641 parameters, single residual mask head) and is applied \emph{after} routed math, so failures can be attributed to routing, a specific front-end, or the residual corrector independently.
+
+\paragraph{What is sacrificed in absolute error.}
+On the 15-scene benchmark, mean RMS error progresses as $0.00936$ (monolithic OM-LSA) $\to$ $0.00878$ (override routing) $\to$ $0.00816$ (distill refined) versus $0.00595$ (teacher), Table~\ref{tab:distill_summary}. The student closes roughly 39\% of the remaining gap between routed math and teacher in mean RMS while adding only $\approx 8$\,ms inference (\chapref{ch:dl}, Table~\ref{tab:runtime}). Structured interference still dominates the residual: scene09 chirp refined RMS ($0.01495$) remains more than $3\times$ the teacher ($0.00447$) even after \texttt{chirp\_notch} and distillation. Thus the hybrid stack is best viewed as a \emph{practical middle tier}---better than a single classical enhancer on heterogeneous noise, but not a drop-in replacement for full DeepFilterNet deployment when absolute fidelity is the only objective.
+
+\paragraph{Deployment economics.}
+DeepFilterNet3 CLI processing takes $\approx 2.9$\,s per 5.6\,s clip on the project workstation; the full hybrid pipeline (route + refine) stays under $\approx 200$\,ms for typical override modules. Teacher generation for all 15 scenes required $\approx 44$\,s offline, whereas student training (\texttt{runD}) completed in 20.1\,s and never runs at user inference except as an optional refine pass. For a web demo or batch analysis tool, this cost asymmetry justifies distillation: the teacher informs training once; deployment carries only routed math plus an optional tiny network.
+
+\paragraph{Implications for ASR preprocessing.}
+Interpretability matters when preprocessing must be debugged in production: a sudden WER regression may stem from over-suppression in low-SNR bins, a mis-routed hum scene, or musical noise from aggressive subtraction. Logging and modular chains make such hypotheses testable without opening a black-box neural enhancer. The reported RMS improvements (6.2\% routing, further 7.1\% refinement relative to routed mean) are proxies for ASR benefit; coupling to a fixed ASR decoder remains future work (\secref{sec:limitations}).
+
+\section{Limitations}
+\label{sec:limitations}
+
+The benchmark results are encouraging but bounded by methodological and modeling assumptions. The following limitations should be read together with the mitigation strategies already partially implemented in the platform.
+
+\begin{itemize}
+  \item \textbf{Dependence on precomputed scene metrics.}
+    Rule-based routing consumes offline JSON scene metrics under \texttt{analysis/scene\_details/} (one \texttt{\_metrics.json} file per scene).
+    Unseen noise types, unseen recording devices, or live streams without a prior analysis pass cannot be routed with the same confidence.
+    Overrides from grid search (\texttt{scene\_method\_}\allowbreak\texttt{overrides.json}) encode \emph{oracle} per-scene module choices and upper-bound what a blind router might achieve; the live \texttt{rule\_router} may disagree when metric thresholds are imperfect.
+    Mitigation: periodic re-analysis of new corpora and learned routers (future work, \secref{sec:future}).
+
+  \item \textbf{Incremental distillation gains.}
+  TinyResidualRefiner improves routed RMS on all 15 scenes (mean $\Delta e = 6.19\times 10^{-4}$) but cannot erase large teacher gaps on chirp, bursts, or babble where the teacher itself achieves $e_{\mathrm{RMS}} \approx 0.004$--$0.011$ while routed math remains above $0.012$--$0.017$. The student learns a \emph{residual mask} on STFT magnitudes conditioned on routed output; it does not replace physics-matched front-ends that remove sweeping ridges or impulsive events. Highly structured interference therefore remains the dominant failure mode.
+
+  \item \textbf{Simplified acoustic models in front-ends.}
+  Single-channel WPE assumes a fixed prediction delay and linear prediction in the STFT domain; subspace and NMF modules use low-rank approximations with fixed iteration counts; Kalman--AR tracking assumes short-term stationarity within frames. Real rooms, moving sources, and non-linear devices violate these assumptions to varying degrees. Scene15 (reverb + hiss) shows modest routing gain because WPE helps tails but cannot recover full dereverberation quality of multi-microphone or neural mask-based systems.
+
+  \item \textbf{Objective RMS vs.\ perceptual and ASR outcomes.}
+  All primary tables use $e_{\mathrm{RMS}}$ against one clean Mandarin reference (\texttt{clean\_reference.wav}). This metric is reproducible and differentiable-friendly for distillation, but it does not measure intelligibility, PESQ, STOI, or word error rate. Scene04 illustrates teacher--reference mismatch: refined RMS ($0.00527$) beats teacher RMS ($0.01076$) on brown noise, so lower $e_{\mathrm{RMS}}$ does not imply better teacher behavior. Informal web ABX pooled only 14 trials at chance accuracy with a debug UI (\chapref{ch:experiments}); no formal MOS or double-blind protocol was completed.
+
+  \item \textbf{Pipeline versioning and reproducibility.}
+  Scene09 documents a routed WAV inconsistency: logged routed RMS ($0.01686$) exceeds base OM-LSA ($0.01506$) while isolated \texttt{chirp\_notch} achieves $0.01185$, indicating stale outputs relative to current overrides. Any comparative study must re-run \texttt{run\_pipeline.py --all} after changing \texttt{scene\_method\_overrides.json}. This is an engineering limitation of artifact-based evaluation rather than of the algorithms themselves.
+
+  \item \textbf{Single-channel scope.}
+  Echo cancellation, beamforming, and multi-talker separation are out of scope (\chapref{ch:introduction}). Many smartphone ASR stacks exploit multiple microphones; conclusions here apply to mono capture paths only.
+\end{itemize}
+
+\section{Comparison with Alternative Approaches}
+\label{sec:comparison}
+
+Table~\ref{tab:approach_compare} situates \projectshort{} against four representative alternatives discussed in \chapref{ch:background} and evaluated implicitly or explicitly in this project.
+
+\begin{table}[H]
+  \centering
+  \caption{Qualitative comparison of denoising deployment strategies (15-scene benchmark context).}
+  \label{tab:approach_compare}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{1.55cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{1.35cm} c >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Approach} & \textbf{Mean $e_{\mathrm{RMS}}$} & \textbf{Latency} & \textbf{Interp.} & \textbf{Best use case} \\
+    \midrule
+    Fixed spectral subtraction (diagnostic baseline) & Not batch-scored; high residual $K$ on S10/S11 & $<10$\,ms & High & Scene analysis only; predicts musical noise \\
+    Monolithic OM-LSA/MCRA & $0.00936$ & $\approx 93$\,ms & Medium & Near-stationary colored noise (e.g.\ S03 pink) \\
+    RNNoise-style hybrid RNN & Not integrated in pipeline & $\sim$10--50\,ms (typical) & Low--medium & Real-time voice calls; fixed model \\
+    \projectshort{} routed + refine & $0.00816$ & $\approx 100$--200\,ms & High & Heterogeneous benchmark; demo + research \\
+    DeepFilterNet3 teacher & $0.00595$ & $\approx 2900$\,ms & Low & Offline quality reference; distillation teacher \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Fixed Spectral Subtraction}
+
+Classical magnitude subtraction with a single $(\alpha,\beta)$ pair (\chapref{ch:algorithms}, \eqref{eq:fixed_sub_ch5}) remains the simplest ASR front-end. Scene analysis uses it as a \emph{diagnostic}: baseline residual kurtosis reaches 142 on scene10 (clicks) and 24 on scene11 (bursts), forecasting severe musical noise under scalar suppression. Local-SNR heatmaps for scene01 show 89.7\% of time--frequency bins below 0\,dB (\chapref{ch:scene}), explaining why fixed gain cannot simultaneously protect speech-dominant and noise-dominant regions. The enhanced OM-LSA core and mixed chains exist precisely to address Propositions on scalar $\alpha$ inadequacy. Fixed subtraction was not re-run as a competitive enhancement stage in Table~\ref{tab:distill_full} because the project treats it as a failure-mode predictor, not a deployment candidate.
+
+\subsection{Monolithic OM-LSA/MCRA}
+
+Running \texttt{base\_omlsa\_mcra} on every scene without routing yields mean RMS $0.00936$. It is the correct fallback when interference is approximately stationary and spectrally flat---scene03 (pink, 10\,dB) shows $<0.01\%$ difference between base and override. However, monolithic OM-LSA loses to specialized modules on 14/15 scenes in grid search (mean improvement $9.18\times 10^{-4}$). The comparison shows that \emph{algorithm diversity} matters more than marginal tuning of one MMSE estimator when noise physics differ across scenes.
+
+\subsection{RNNoise and Compact Neural Enhancers}
+
+RNNoise~\cite{rnnoise2018} combines classical feature design (pitch, band energies) with a small recurrent network for real-time speech enhancement. It offers a strong single-model baseline for VoIP but does not expose scene-specific routing or physics-matched chains. Integrating RNNoise into \projectshort{} was not attempted; qualitatively, RNNoise targets wideband non-stationary noise at fixed complexity, whereas this project's chirp, hum, and reverberation modules address failure modes that a general RNN may conflate. A fair future comparison would run RNNoise on the same 15 WAVs and report $e_{\mathrm{RMS}}$, latency, and ABX---mirroring the DeepFilterNet teacher protocol.
+
+\subsection{Full DeepFilterNet Deployment}
+
+DeepFilterNet3 achieves the lowest mean RMS ($0.00595$) but at $\sim 350\times$ higher inference time than student refine alone and $\sim 30\times$ higher than routed math + refine. It requires a separate model download, 48\,kHz internal processing, and subprocess invocation in the project toolchain. For always-on mobile preprocessing, that cost is hard to justify unless quality dominates all other constraints. The project's stance is \textbf{teacher-at-training-time, student-or-math-at-runtime}: distillation transfers part of the teacher's residual correction into a mask predictor operating on 16\,kHz STFTs already computed for OM-LSA.
+
+\subsection{Grid-Search Overrides vs.\ Live Rule Router}
+
+The reported routed numbers use per-scene \emph{oracle} overrides from exhaustive search (\texttt{search\_best\_method\_per\_scene.py}), not necessarily the output of \texttt{choose\_route} alone. This distinction is important for readers evaluating RQ1: scene metrics \emph{can} guide selection---the winning module per scene aligns with routing priorities (NMF for broadband/low-SNR white, subspace for hum and street, WPE for babble and reverb, chirp notch for S09)---but automated rules still require threshold tuning and occasional override files for peak benchmark scores. The comparison is therefore between \emph{adaptive algorithm selection} (oracle or rule-based) and \emph{fixed algorithm selection}, not between learned end-to-end enhancement and hand-crafted chains.
+
+\section{Lessons Learned}
+\label{sec:lessons}
+
+\subsection{Scene Analysis Changed Algorithm Priorities}
+
+Full-dimensional analysis (\chapref{ch:scene}) was not decorative metadata; it directly motivated ANASS parameter ranges, distillation sampling weights, and router thresholds.
+
+\paragraph{Local SNR tails drive adaptivity.}
+Scenes with heavy left tails in local-SNR histograms (scene01, scene02) justified VAD-gated noise estimation and frequency-dependent over-subtraction in ANASS Module~2 rather than a global subtraction factor. Experimentally, scene02 at 5\,dB white noise benefits from \texttt{nmf\_denoise} routing plus refinement ($e_{\mathrm{RMS}}$: $0.01065 \to 0.00936$), consistent with the analysis prediction that broadband low-SNR regions need template-based separation before OM-LSA.
+
+\paragraph{Separability statistics predict specialist modules.}
+Priority scenes (02, 09, 10--12) exhibited the largest Cohen's $d$ deficits between speech and noise STFT statistics. That prioritization aligned with the largest distillation gains (scene09 $\Delta=0.00191$, scene12 $\Delta=0.00143$). Investing engineering effort in chirp ridge cancellation and babble WPE chains yielded more benchmark improvement than further tweaking OM-LSA gain floors on easy stationary scenes.
+
+\paragraph{Baseline subtraction kurtosis flags musical noise risk.}
+High baseline kurtosis on impulsive scenes forewarned that OM-LSA alone might leave click-like residuals; NMF and Kalman routing on scenes 10--11 reduced RMS by 20.5\% and 11.5\% respectively versus base. The lesson is to use \emph{cheap diagnostics} before expensive neural training: if fixed subtraction residuals are already heavy-tailed, adaptive MMSE and structured front-ends are warranted.
+
+\subsection{Routing Design}
+
+Theorem~\ref{thm:chain} (\chapref{ch:algorithms})---structured interference first, OM-LSA back-end second---is reflected in override chains: hum and street favor \texttt{subspace\_denoise}; babble and reverb favor \texttt{wpe\_omlsa}; chirp favors \texttt{chirp\_notch}. Scene03 taught a complementary lesson: when analysis shows near-stationary colored noise without tonal structure, the default \texttt{base\_omlsa\_mcra} chain is sufficient and extra modules add complexity without measurable RMS benefit.
+
+Override configuration improved 13/15 scenes versus monolithic base; the two exceptions (scene03 near-tie, scene09 stale artifact) reinforce that routing must be \emph{validated on regenerated WAVs}, not assumed from logs alone.
+
+\subsection{Distillation as a Second Stage, Not a Panacea}
+
+Training the student on teacher--routed STFT pairs worked uniformly (15/15 improvements) because the network corrects \emph{consistent} residual patterns left by math (slurred harmonics, ridge remnants, babble smear). It did not learn to invert gross routing errors on chirp when routed files were suboptimal. The design lesson: distillation budget is best spent on scenes where routed output is already plausible---matching the oversampling of priority scenes in \texttt{runD} training (\chapref{ch:dl}).
+
+\subsection{Evaluation Platform Feedback}
+
+The web platform (\chapref{ch:web}) closed the loop for RQ4: uploading benchmark clips produced 28 Plotly diagnostics per task, residual exports, and informal ABX. Even limited ABX on scene09 showed that salient interference makes discrimination easier---informing where perceptual studies should focus. Reproducibility scripts (Docker, pinned requirements, JSON eval artifacts) turned one-off listening impressions into tables and figures in \chapref{ch:experiments}.
+
+\section{Chapter Summary}
+\label{sec:discussion_summary}
+
+\projectshort{} occupies a deliberate point on the quality--cost--interpretability surface: routed mathematical enhancement with optional distilled refinement materially beats a monolithic OM-LSA baseline on heterogeneous noise, yet remains an order of magnitude faster than deploying DeepFilterNet3 at inference. Limitations cluster around oracle routing assumptions, structured-interference residuals, mono-channel physics, and RMS-only evaluation. Scene analysis supplied the quantitative narrative that justifies adaptive chains and training focus. \chapref{ch:conclusion} consolidates answers to the research questions and outlines the next engineering steps.

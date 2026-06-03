@@ -1,0 +1,64 @@
+% Distillation pipeline (Chapter 7)
+\begin{tikzpicture}[
+  node distance=0.7cm and 1.2cm,
+  block/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=shulayer1,
+    rounded corners=3pt,
+    minimum width=2.5cm,
+    minimum height=0.8cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  offline/.style={
+    draw=shublue!70,
+    line width=0.55pt,
+    fill=shulayer3,
+    rounded corners=3pt,
+    minimum width=2.5cm,
+    minimum height=0.8cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+    dashed,
+  },
+  arr/.style={
+    -{Stealth[length=2.2mm, width=1.7mm]},
+    line width=0.55pt,
+    draw=shublue!80,
+  },
+  darr/.style={
+    -{Stealth[length=2.2mm, width=1.7mm]},
+    line width=0.55pt,
+    draw=shublue!50,
+    dashed,
+  },
+]
+
+\node[block] (noisy) {Noisy $y$};
+\node[block, right=of noisy] (route) {Rule router\\+ math chain};
+\node[block, right=of route] (routed) {$D_{\mathrm{math}}$\\ \texttt{*\_routed.wav}};
+
+\node[offline, below=1.0cm of noisy] (teacher) {DeepFilterNet3\\ (offline teacher)};
+\node[block, below=1.0cm of routed] (pairs) {Distill pairs\\ \texttt{distill\_pairs.json}};
+
+\node[block, below=1.0cm of pairs] (train) {Train student\\ \texttt{student\_runD.pt}};
+\node[block, right=of train] (infer) {Refine mask\\ $M \odot D_{\mathrm{math}}$};
+\node[block, right=of infer] (out) {Output $\hat{s}$};
+
+\draw[arr] (noisy) -- (route);
+\draw[arr] (route) -- (routed);
+\draw[darr] (noisy.south) ++(0,-0.15) -| (teacher.north);
+\draw[arr] (routed.south) -- (pairs.north);
+\draw[arr] (teacher.east) -| (pairs.south);
+\draw[arr] (pairs.south) -- (train.north);
+\draw[arr] (train.east) -- (infer.west);
+\draw[arr] (infer.east) -- (out.west);
+\draw[arr] (routed.south) ++(0,-0.15) -| (infer.north);
+
+\node[font=\scriptsize, text=shugray, align=center] at ($(teacher)!0.5!(pairs)+(-1.6,0)$)
+  {Training only};
+
+\end{tikzpicture}

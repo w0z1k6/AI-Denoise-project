@@ -1,0 +1,278 @@
+\chapter{API Reference and Configuration}
+\label{app:api}
+
+This appendix documents the web REST contract (\chapref{ch:web}), batch CLI entry points, and default hyperparameters read from the implementation. OpenAPI is served at \texttt{http://localhost:8000/docs} when the backend is running.
+
+\section{REST Endpoint Summary}
+\label{app:api_endpoints}
+
+Table~\ref{tab:api_appendix} duplicates the endpoint catalog for quick reference. All API routes use prefix \texttt{/api} except \texttt{GET /health}.
+
+\begin{table}[H]
+  \centering
+  \caption{REST API endpoints (\texttt{webapp/backend/app/routers/}).}
+  \label{tab:api_appendix}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \textbf{Method \& path} & \textbf{Response} & \textbf{Description} \\
+    \midrule
+    \texttt{GET /health} & JSON & Liveness: \texttt{\{ok: true\}} \\
+    \texttt{POST /api/upload} & \texttt{UploadResponse} & Multipart audio $\to$ new \texttt{task\_id} \\
+    \texttt{POST /api/process} & \texttt{ProcessResponse} & Queue background denoise job \\
+    \texttt{GET /api/task/\{id\}} & \texttt{TaskStatusResponse} & \texttt{status}, \texttt{progress}, \texttt{error} \\
+    \texttt{GET /api/history} & JSON list & All tasks (newest first) \\
+    \texttt{DELETE /api/history/\{id\}} & JSON & Remove task artifacts \\
+    \texttt{GET /api/result/\{id\}/metrics} & JSON & SNR, RMS, kurtosis, route meta \\
+    \texttt{GET /api/result/\{id\}/plots} & JSON & 28 Plotly chart specs \\
+    \texttt{GET /api/result/\{id\}/audio/original} & WAV stream & Uploaded input \\
+    \texttt{GET /api/result/\{id\}/audio/denoised} & WAV stream & Enhanced output \\
+    \texttt{GET /api/result/\{id\}/audio/residual} & WAV stream & $x-\hat{x}$ \\
+    \texttt{POST /api/abx/\{id\}/record} & JSON & Log ABX trial (\texttt{x\_is}, \texttt{guess}) \\
+    \texttt{GET /api/abx/\{id\}/stats} & JSON & Accuracy, trial count \\
+    \texttt{POST /api/bookmark/\{id\}} & JSON & Timestamped listening note \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Process Request Schema}
+\label{app:process_schema}
+
+\texttt{ProcessRequest} is defined in \texttt{app/schemas/models.py}. Fields:
+
+\begin{table}[H]
+  \centering
+  \caption{\texttt{ProcessRequest} fields.}
+  \label{tab:process_fields}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Field} & \textbf{Type / default} & \textbf{Description} \\
+    \midrule
+    \texttt{task\_id} & string (required) & From \texttt{POST /api/upload} \\
+    \texttt{method} & string, \texttt{auto} & See Table~\ref{tab:method_values} \\
+    \texttt{run\_distill\_refine} & bool, \texttt{false} & Apply \texttt{student\_runD.pt} after routing \\
+    \texttt{deepfilter\_model\_dir} & string or null & DeepFilterNet3 root for \texttt{deepfilter} mode \\
+    \texttt{noisereduce\_strength} & float, \texttt{0.8} & Library strength in $[0.1,1.0]$ \\
+    \texttt{stft\_nfft} & int, \texttt{512} & Reserved (runner uses library defaults) \\
+    \texttt{stft\_hop} & int, \texttt{128} & Reserved \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Supported \texttt{method} values in \texttt{denoise\_runner.run\_denoise()}.}
+  \label{tab:method_values}
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Value} & \textbf{Behavior} \\
+    \midrule
+    \texttt{auto} & \texttt{choose\_route()} + override file; optional distill \\
+    \texttt{omlsa} / \texttt{base\_omlsa\_mcra} & Monolithic OM-LSA/MCRA \\
+    \texttt{wpe\_omlsa}, \texttt{subspace\_denoise}, \texttt{nmf\_denoise}, \texttt{kalman\_ar}, \texttt{chirp\_notch} & Single forced module \\
+    \texttt{noisereduce} & \texttt{noisereduce} library baseline \\
+    \texttt{wiener} & SciPy Wiener baseline \\
+    \texttt{deepfilter} & DeepFilterNet3 CLI (falls back to OM-LSA if missing) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{lstlisting}[language=Python,caption={Example \texttt{POST /api/process} body.},label={lst:process_req}]
+{
+  "task_id": "8adf921ec9bc",
+  "method": "auto",
+  "run_distill_refine": true,
+  "noisereduce_strength": 0.8,
+  "deepfilter_model_dir": null,
+  "stft_nfft": 512,
+  "stft_hop": 128
+}
+\end{lstlisting}
+
+\section{CLI Commands}
+\label{app:cli}
+
+\begin{lstlisting}[caption={Batch pipeline and evaluation (repository root).},label={lst:cli}]
+# Routed outputs for all benchmark scenes
+python analysis/denoise_selection/run_pipeline.py --all
+
+# Per-scene best-method grid search -> overrides JSON
+python analysis/denoise_selection/eval/search_best_method_per_scene.py
+
+# Distillation: build pairs, train, infer, evaluate
+python analysis/denoise_selection/distill/build_distill_pairs.py
+python analysis/denoise_selection/distill/train_student_distill.py --tag runD
+python analysis/denoise_selection/distill/infer_student_refine.py \
+  --checkpoint analysis/denoise_selection/distill/checkpoints/student_runD.pt
+python analysis/denoise_selection/distill/eval_distill_ab.py
+
+# Regenerate report experiment figures
+python report/scripts/gen_experiment_figures.py
+
+# Web backend (from webapp/backend)
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+\end{lstlisting}
+
+\section{Routing Override Configuration}
+\label{app:overrides}
+
+\texttt{config/scene\_method\_overrides.json} maps each benchmark filename to the single-module winner from grid search (\chapref{ch:experiments}). The live router checks this file \emph{before} rule-based logic (\texttt{rule\_router.py}).
+
+\begin{lstlisting}[caption={Production override map (complete, 15 scenes).},label={lst:override}]
+{
+  "scene01_white_snr15.wav": "nmf_denoise",
+  "scene02_white_snr5.wav": "nmf_denoise",
+  "scene03_pink_snr10.wav": "base_omlsa_mcra",
+  "scene04_brown_snr8.wav": "subspace_denoise",
+  "scene05_hum50_snr12.wav": "subspace_denoise",
+  "scene06_hum60_snr12.wav": "nmf_denoise",
+  "scene07_highfreq_hiss_snr10.wav": "wpe_omlsa",
+  "scene08_lowfreq_rumble_snr10.wav": "subspace_denoise",
+  "scene09_chirp_interference_snr8.wav": "chirp_notch",
+  "scene10_impulsive_clicks_snr9.wav": "nmf_denoise",
+  "scene11_intermittent_bursts_snr7.wav": "kalman_ar",
+  "scene12_babble_like_snr5.wav": "wpe_omlsa",
+  "scene13_street_combo_snr6.wav": "subspace_denoise",
+  "scene14_office_fan_snr9.wav": "nmf_denoise",
+  "scene15_reverb_plus_hiss_snr10.wav": "wpe_omlsa"
+}
+\end{lstlisting}
+
+\chapter{Hyperparameter Tables}
+\label{app:hyperparams}
+
+Default parameters are hard-coded in \texttt{algorithms/} and \texttt{distill/distill\_config.json} unless noted. STFT settings are centralized in \texttt{algorithms/common.py}.
+
+\section{Shared STFT and I/O}
+\label{app:stft}
+
+\begin{table}[H]
+  \centering
+  \caption{Global STFT and audio settings.}
+  \label{tab:hp_stft}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Symbol / key} & \textbf{Value} & \textbf{Location} \\
+    \midrule
+    $f_s$                   & 16\,000\,Hz & Benchmark + web upload \\
+    $N_{\mathrm{FFT}}$      & 512         & \texttt{STFT\_NFFT} \\
+    Hop                     & 128         & \texttt{STFT\_HOP} \\
+    Window                  & Hann        & \texttt{STFT\_WIN} \\
+    Peak limiter            & 0.99        & \texttt{save\_audio()} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{OM-LSA/MCRA Core (\texttt{base\_omlsa\_mcra.py})}
+\label{app:omlsa}
+
+\begin{table}[H]
+  \centering
+  \caption{OM-LSA/MCRA parameters in \texttt{enhance\_spectrum\_omlsa\_mcra()}.}
+  \label{tab:hp_omlsa}
+  \begin{tabular}{cll}
+    \toprule
+    \textbf{Symbol} & \textbf{Value} & \textbf{Role} \\
+    \midrule
+    $\alpha_p$        & 0.8   & Speech-presence probability smoothing \\
+    $\alpha_{dd}$     & 0.98  & Decision-directed a priori SNR update \\
+    $\alpha_{noise}$  & 0.92  & Base noise PSD smoothing \\
+    $G_{\min}$        & 0.06  & Gain floor (\texttt{gain\_floor}) \\
+    MCRA window       & 30 frames & Minima-controlled tracking~\cite{cohen2003mcra,loizou2013} \\
+    Init noise frames & $\min(12,T)$ & Initial noise PSD from mixture \\
+    SPP blend         & $G = G_{\mathrm{H1}}^{p_1} G_{\min}^{1-p_1}$ & Soft speech-presence gating \\
+    $\alpha_t$        & $\alpha_{noise}+0.06\,p_1$ & Speech-dependent noise update \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Specialized Front-End Modules}
+\label{app:modules_hp}
+
+\begin{table}[H]
+  \centering
+  \caption{Key parameters per denoising module.}
+  \label{tab:hp_modules}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \textbf{Module} & \textbf{Parameters} & \textbf{Notes} \\
+    \midrule
+    \texttt{adaptive\_notch\_bank} &
+    max 8 peaks; prominence $>6$\,dB; $Q{=}35$ ($f{<}500$\,Hz) else $50$; 50/60\,Hz harmonics $\times 4$ &
+    Followed by OM-LSA in hum chain \\
+    \texttt{wpe\_omlsa} &
+    taps $=8$, delay $=3$, iterations $=2$ &
+    Diagonal WPE then OM-LSA \\
+    \texttt{subspace\_denoise} &
+    init 12 frames; noise rank from 90\% energy (clip $1\ldots 6$) &
+    Projects mixture off noise subspace \\
+    \texttt{nmf\_denoise} &
+    rank$_n{=}4$, rank$_s{=}8$; 30/40 MU iters; seeds 11/23 &
+    Semi-supervised bases from init frames \\
+    \texttt{kalman\_ar} &
+    AR order $=10$ &
+    Yule--Walker + Kalman then OM-LSA \\
+    \texttt{chirp\_notch} &
+    ridge detection mid-band; aggressive cancel + inpainting &
+    Ends with OM-LSA on residual \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{ANASS Baseline Subtraction Ranges}
+\label{app:anass_hp}
+
+Scene analysis aggregates suggested fixed-subtraction ranges (\texttt{anass\_init\_ranges.json}):
+
+\begin{table}[H]
+  \centering
+  \caption{ANASS-guided fixed-subtraction parameter ranges (diagnostic baseline).}
+  \label{tab:hp_anass}
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Parameter} & \textbf{Suggested range} \\
+    \midrule
+    $\alpha_{\mathrm{low}}$  & $[1.4,\, 2.0]$ \\
+    $\alpha_{\mathrm{high}}$ & $[3.2,\, 4.0]$ \\
+    $\beta_{\mathrm{low}}$   & $[0.008,\, 0.0176]$ \\
+    $\beta_{\mathrm{high}}$  & $[0.045,\, 0.0765]$ \\
+    Noise update rate        & $[0.87,\, 0.93]$ \\
+    Time smoothing           & $[0.15,\, 0.35]$ \\
+    Frequency smoothing      & $[0.05,\, 0.16]$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{TinyResidualRefiner Distillation}
+\label{app:distill_hp}
+
+\begin{table}[H]
+  \centering
+  \caption{\texttt{distill\_config.json} training defaults (\texttt{runD} checkpoint).}
+  \label{tab:hp_distill}
+  \footnotesize
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Key} & \textbf{Value} \\
+    \midrule
+    \texttt{max\_steps} / \texttt{max\_train\_seconds} & 1200 / 900 \\
+    \texttt{learning\_rate} & $5\times 10^{-4}$ \\
+    \texttt{chunk\_seconds} & 1.0\,s (16\,000 samples) \\
+    \texttt{train\_residual\_alpha} & 0.8 (training mask) \\
+    Inference \texttt{residual\_scale} & 1.0 \\
+    \texttt{compress\_exponent} & 0.5 \\
+    Loss weights (\texttt{distill\_l1}, \texttt{mag\_compress}, \texttt{clean\_aux\_mag}) & 1.0, 0.3, 0.15 \\
+    Teacher mask clip & $[0.2,\, 1.8]$ \\
+    Hard-scene weights (S02, S09, S11) & 3.0, 3.5, 1.5 \\
+    Architecture & Conv2D $2\!\to\!16\!\to\!16\!\to\!1$, $3\times 3$ kernels \\
+    Parameters & 2641 (\texttt{student\_runD.pt}) \\
+    \texttt{seed} & 42 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Rule Router Thresholds (Summary)}
+\label{app:router_hp}
+
+When no override applies, \texttt{choose\_route()} uses band SNR (\texttt{low/mid/high}), \texttt{ratio\_lt0}, filename keywords, and \texttt{noise\_type} string. Priority order: reverb $\to$ hum/fan $\to$ chirp $\to$ HF hiss $\to$ low local SNR ($r_{<0}>0.75$, low/mid ${<}8$\,dB) $\to$ street/babble $\to$ default \texttt{base\_omlsa\_mcra}. Full pseudocode is in \chapref{ch:routing}, Algorithm~\ref{alg:choose_route}.

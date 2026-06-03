@@ -1,0 +1,120 @@
+% Web application data-flow diagram (included from Chapter 3)
+% Three-column bottom row; sequence strip centered below entire processing tier
+\begin{tikzpicture}[
+  node distance=0.9cm and 1.65cm,
+  actor/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=shulayer1,
+    rounded corners=3pt,
+    minimum width=2.2cm,
+    minimum height=0.95cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  service/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=white,
+    rounded corners=3pt,
+    minimum width=3.0cm,
+    minimum height=1.05cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  store/.style={
+    draw=shublue,
+    line width=0.55pt,
+    fill=shulayer2,
+    rounded corners=3pt,
+    minimum height=0.95cm,
+    minimum width=2.6cm,
+    align=center,
+    font=\footnotesize,
+    inner sep=4pt,
+  },
+  seqbox/.style={
+    draw=shublue!60,
+    line width=0.45pt,
+    fill=shulayer1,
+    rounded corners=4pt,
+    inner sep=6pt,
+    font=\scriptsize,
+    text=shugray,
+    align=center,
+  },
+  arr/.style={
+    -{Stealth[length=2.2mm, width=1.7mm]},
+    line width=0.55pt,
+    draw=shublue,
+  },
+  lbl/.style={
+    font=\scriptsize,
+    text=shugray,
+    fill=white,
+    inner sep=2pt,
+    align=center,
+  },
+]
+
+\pgfmathsetlengthmacro{\rowgap}{2.15cm}
+\pgfmathsetlengthmacro{\loopheight}{1.15cm}
+\pgfmathsetlengthmacro{\seqgap}{1.75cm}
+
+% =============================================================================
+% Top row (client tier)
+% =============================================================================
+\node[actor] (user) {User /\\Browser};
+\node[service, right=of user] (frontend) {React Frontend\\Upload, Charts, ABX};
+\node[service, right=of frontend] (api) {FastAPI Backend\\REST + Tasks};
+
+\draw[arr]
+  (frontend.north) -- ++(0,\loopheight)
+  -| node[lbl, above, pos=0.5, yshift=-2pt] {poll status} (api.north);
+
+\draw[arr] (user) -- node[lbl, above] {HTTPS} (frontend);
+\draw[arr] (frontend) -- node[lbl, above] {/api/*} (api);
+
+% =============================================================================
+% Bottom row (processing tier)
+% =============================================================================
+\node[store, below=\rowgap of frontend, anchor=north] (files) {%
+  WAV / JSON\\Storage};
+\node[service, below=\rowgap of api, anchor=north] (runner) {%
+  Denoise Runner\\+ Distill Refiner};
+\node[service, right=of runner] (algo) {%
+  Algorithm Library\\+ Rule Router};
+
+\draw[arr] (api.south) -- node[lbl, right, pos=0.42] {queue} (runner.north);
+\draw[arr] (runner.east) -- node[lbl, above] {invoke} (algo.west);
+
+% read/write: route below the boxes (avoids crossing Algorithm Library)
+\draw[arr]
+  (runner.south) -- ++(0,-0.55)
+  -| node[lbl, below, pos=0.25, yshift=2pt] {read / write} (files.south);
+
+% persist: drop below API, then enter Storage from above
+\draw[arr]
+  (api.south) -- ++(0,-0.5)
+  -| node[lbl, above, pos=0.3] {persist} (files.north);
+
+% =============================================================================
+% Sequence strip — centered below the full bottom row
+% =============================================================================
+\coordinate (bottomrow) at ($(files.south)!0.5!(algo.south)$);
+
+\node[seqbox,
+      below=\seqgap of bottomrow,
+      anchor=north,
+      minimum width=13.0cm] (seqstrip) {%
+  \textbf{\textcolor{shublue}{Processing sequence:}}\quad
+  \textbf{1.}~Upload
+  $\rightarrow$ \textbf{2.}~Process
+  $\rightarrow$ \textbf{3.}~Denoise
+  $\rightarrow$ \textbf{4.}~Optional refine
+  $\rightarrow$ \textbf{5.}~Metrics / plots
+  $\rightarrow$ \textbf{6.}~ABX};
+
+\end{tikzpicture}

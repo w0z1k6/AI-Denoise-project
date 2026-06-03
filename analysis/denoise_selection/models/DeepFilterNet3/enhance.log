@@ -14,3 +14,123 @@
 2026-05-30 19:16:57 | INFO     | DF | Running on device cpu
 2026-05-30 19:16:57 | INFO     | DF | Model loaded
 2026-05-30 19:17:01 | INFO     | DF | Enhanced noisy audio file 'scene09_chirp_interference_snr8.wav' in 0.19s (RT factor: 0.034)
+2026-05-31 16:10:16 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:10:16 | INFO     | DF | Running on host wozik16
+2026-05-31 16:10:16 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:10:16 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:10:17 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:10:17 | INFO     | DF | Running on device cpu
+2026-05-31 16:10:17 | INFO     | DF | Model loaded
+2026-05-31 16:10:26 | INFO     | DF | Enhanced noisy audio file 'scene01_white_snr15.wav' in 0.18s (RT factor: 0.031)
+2026-05-31 16:10:29 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:10:29 | INFO     | DF | Running on host wozik16
+2026-05-31 16:10:29 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:10:29 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:10:29 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:10:29 | INFO     | DF | Running on device cpu
+2026-05-31 16:10:29 | INFO     | DF | Model loaded
+2026-05-31 16:10:33 | INFO     | DF | Enhanced noisy audio file 'scene02_white_snr5.wav' in 0.14s (RT factor: 0.025)
+2026-05-31 16:10:37 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:10:37 | INFO     | DF | Running on host wozik16
+2026-05-31 16:10:37 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:10:37 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:10:37 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:10:37 | INFO     | DF | Running on device cpu
+2026-05-31 16:10:37 | INFO     | DF | Model loaded
+2026-05-31 16:10:40 | INFO     | DF | Enhanced noisy audio file 'scene03_pink_snr10.wav' in 0.15s (RT factor: 0.026)
+2026-05-31 16:10:44 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:10:44 | INFO     | DF | Running on host wozik16
+2026-05-31 16:10:44 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:10:44 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:10:44 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:10:44 | INFO     | DF | Running on device cpu
+2026-05-31 16:10:44 | INFO     | DF | Model loaded
+2026-05-31 16:10:48 | INFO     | DF | Enhanced noisy audio file 'scene04_brown_snr8.wav' in 0.16s (RT factor: 0.028)
+2026-05-31 16:10:51 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:10:51 | INFO     | DF | Running on host wozik16
+2026-05-31 16:10:51 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:10:51 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:10:51 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:10:51 | INFO     | DF | Running on device cpu
+2026-05-31 16:10:51 | INFO     | DF | Model loaded
+2026-05-31 16:10:56 | INFO     | DF | Enhanced noisy audio file 'scene05_hum50_snr12.wav' in 0.20s (RT factor: 0.036)
+2026-05-31 16:10:59 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:10:59 | INFO     | DF | Running on host wozik16
+2026-05-31 16:10:59 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:10:59 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:10:59 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:10:59 | INFO     | DF | Running on device cpu
+2026-05-31 16:10:59 | INFO     | DF | Model loaded
+2026-05-31 16:11:03 | INFO     | DF | Enhanced noisy audio file 'scene06_hum60_snr12.wav' in 0.18s (RT factor: 0.031)
+2026-05-31 16:11:06 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:06 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:06 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:06 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:06 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:06 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:06 | INFO     | DF | Model loaded
+2026-05-31 16:11:10 | INFO     | DF | Enhanced noisy audio file 'scene07_highfreq_hiss_snr10.wav' in 0.17s (RT factor: 0.030)
+2026-05-31 16:11:14 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:14 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:14 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:14 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:14 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:14 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:14 | INFO     | DF | Model loaded
+2026-05-31 16:11:18 | INFO     | DF | Enhanced noisy audio file 'scene08_lowfreq_rumble_snr10.wav' in 0.18s (RT factor: 0.032)
+2026-05-31 16:11:21 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:21 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:21 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:21 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:21 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:21 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:21 | INFO     | DF | Model loaded
+2026-05-31 16:11:25 | INFO     | DF | Enhanced noisy audio file 'scene09_chirp_interference_snr8.wav' in 0.19s (RT factor: 0.033)
+2026-05-31 16:11:28 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:28 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:28 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:28 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:28 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:28 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:28 | INFO     | DF | Model loaded
+2026-05-31 16:11:32 | INFO     | DF | Enhanced noisy audio file 'scene10_impulsive_clicks_snr9.wav' in 0.18s (RT factor: 0.032)
+2026-05-31 16:11:35 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:35 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:35 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:35 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:35 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:35 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:35 | INFO     | DF | Model loaded
+2026-05-31 16:11:39 | INFO     | DF | Enhanced noisy audio file 'scene11_intermittent_bursts_snr7.wav' in 0.18s (RT factor: 0.031)
+2026-05-31 16:11:42 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:42 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:42 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:42 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:42 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:43 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:43 | INFO     | DF | Model loaded
+2026-05-31 16:11:47 | INFO     | DF | Enhanced noisy audio file 'scene12_babble_like_snr5.wav' in 0.17s (RT factor: 0.030)
+2026-05-31 16:11:50 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:50 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:50 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:50 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:50 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:51 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:51 | INFO     | DF | Model loaded
+2026-05-31 16:11:54 | INFO     | DF | Enhanced noisy audio file 'scene13_street_combo_snr6.wav' in 0.18s (RT factor: 0.032)
+2026-05-31 16:11:58 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:11:58 | INFO     | DF | Running on host wozik16
+2026-05-31 16:11:58 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:11:58 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:11:58 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:11:58 | INFO     | DF | Running on device cpu
+2026-05-31 16:11:58 | INFO     | DF | Model loaded
+2026-05-31 16:12:02 | INFO     | DF | Enhanced noisy audio file 'scene14_office_fan_snr9.wav' in 0.18s (RT factor: 0.031)
+2026-05-31 16:12:05 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-05-31 16:12:05 | INFO     | DF | Running on host wozik16
+2026-05-31 16:12:05 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-05-31 16:12:05 | INFO     | DF | Initializing model `deepfilternet3`
+2026-05-31 16:12:05 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-05-31 16:12:05 | INFO     | DF | Running on device cpu
+2026-05-31 16:12:05 | INFO     | DF | Model loaded
+2026-05-31 16:12:09 | INFO     | DF | Enhanced noisy audio file 'scene15_reverb_plus_hiss_snr10.wav' in 0.17s (RT factor: 0.031)

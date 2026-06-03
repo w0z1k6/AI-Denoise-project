@@ -1,0 +1,9 @@
+{
+  "checkpoint": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\checkpoints\\student_runB.pt",
+  "device": "cpu",
+  "steps_run": 1200,
+  "elapsed_sec": 18.473691701889038,
+  "final_train_loss": 0.18122047185897827,
+  "val_l1_mask": 0.5344886680444082,
+  "lr": 0.0003
+}

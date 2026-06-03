@@ -1,0 +1,129 @@
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Neumorphism base */
+  --bg-base: #e0e5ec;
+  --bg-surface: #e0e5ec;
+  --bg-elevated: #e8edf4;
+  --bg-plot: #f5f7fb;
+
+  /* Text hierarchy — high contrast on soft bg */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+
+  /* Multicolor accents */
+  --accent: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-purple: #8b5cf6;
+  --accent-pink: #f472b6;
+  --accent-orange: #f97316;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+
+  /* Status */
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0284c7;
+
+  /* Neumorphism shadows */
+  --neu-shadow-light: rgba(255, 255, 255, 0.92);
+  --neu-shadow-dark: rgba(163, 177, 198, 0.65);
+  --neu-raised: 10px 10px 24px var(--neu-shadow-dark), -10px -10px 24px var(--neu-shadow-light);
+  --neu-raised-sm: 5px 5px 14px var(--neu-shadow-dark), -5px -5px 14px var(--neu-shadow-light);
+  --neu-raised-lg: 18px 18px 40px var(--neu-shadow-dark), -18px -18px 40px var(--neu-shadow-light);
+  --neu-inset: inset 6px 6px 14px var(--neu-shadow-dark), inset -6px -6px 14px var(--neu-shadow-light);
+  --neu-inset-sm: inset 3px 3px 8px var(--neu-shadow-dark), inset -3px -3px 8px var(--neu-shadow-light);
+
+  /* Glass overlay on neu */
+  --glass-bg: rgba(255, 255, 255, 0.28);
+  --glass-bg-strong: rgba(255, 255, 255, 0.42);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-inner-highlight: rgba(255, 255, 255, 0.75);
+  --glass-blur: 28px;
+  --glass-shadow: var(--neu-raised-sm);
+  --glass-shadow-hover: var(--neu-raised);
+
+  /* Ambient blobs */
+  --blob-1: #ffb4b8;
+  --blob-2: #a1c4fd;
+  --blob-3: #c4b5fd;
+
+  /* Focus & borders */
+  --focus-ring: rgba(59, 130, 246, 0.4);
+  --border-subtle: rgba(163, 177, 198, 0.35);
+  --border-strong: rgba(148, 163, 184, 0.5);
+
+  /* Typography — Chinese-first */
+  --font-main: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC",
+    "Source Han Sans SC", "WenQuanYi Micro Hei", system-ui, sans-serif;
+  --font-display: "PingFang SC", "Microsoft YaHei UI", "Noto Sans SC", "Source Han Sans SC", sans-serif;
+
+  /* Spacing & radius */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-24: 24px;
+  --radius-hero: 50px;
+
+  /* Motion */
+  --dur-fast: 180ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-base: #1a2233;
+  --bg-surface: #1e2638;
+  --bg-elevated: #232d42;
+  --bg-plot: #1a2233;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-muted: #94a3b8;
+  --text-inverse: #0f172a;
+
+  --accent: #60a5fa;
+  --accent-cyan: #22d3ee;
+  --accent-purple: #a78bfa;
+  --accent-pink: #f472b6;
+  --accent-orange: #fb923c;
+  --accent-soft: rgba(96, 165, 250, 0.16);
+
+  --neu-shadow-light: rgba(255, 255, 255, 0.06);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.55);
+  --neu-raised: 10px 10px 24px var(--neu-shadow-dark), -6px -6px 18px var(--neu-shadow-light);
+  --neu-raised-sm: 4px 4px 12px var(--neu-shadow-dark), -3px -3px 10px var(--neu-shadow-light);
+  --neu-raised-lg: 16px 16px 36px var(--neu-shadow-dark), -8px -8px 24px var(--neu-shadow-light);
+  --neu-inset: inset 5px 5px 12px var(--neu-shadow-dark), inset -4px -4px 10px var(--neu-shadow-light);
+  --neu-inset-sm: inset 3px 3px 7px var(--neu-shadow-dark), inset -2px -2px 6px var(--neu-shadow-light);
+
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-inner-highlight: rgba(255, 255, 255, 0.15);
+  --glass-shadow: var(--neu-raised-sm);
+  --glass-shadow-hover: var(--neu-raised);
+
+  --blob-1: #7c3aed66;
+  --blob-2: #2563eb66;
+  --blob-3: #0891b266;
+
+  --focus-ring: rgba(96, 165, 250, 0.35);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+}

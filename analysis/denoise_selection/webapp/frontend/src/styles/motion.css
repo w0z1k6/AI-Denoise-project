@@ -1,0 +1,57 @@
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .collapse-panel {
+    grid-template-rows: 1fr !important;
+    opacity: 1 !important;
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp var(--dur-base) var(--ease-standard) both;
+}
+
+.page-route {
+  animation: fadeInUp var(--dur-base) var(--ease-standard) both;
+}
+
+.stagger > * {
+  opacity: 0;
+  animation: fadeInUp var(--dur-slow) var(--ease-soft) both;
+}
+
+.stagger > *:nth-child(1) {
+  animation-delay: 20ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 70ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 170ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 220ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 270ms;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

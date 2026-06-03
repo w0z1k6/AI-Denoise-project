@@ -1,0 +1,114 @@
+{
+  "summary": {
+    "scene_count": 15,
+    "better_than_routed_count": 15,
+    "mean_improve_vs_routed_rms": 0.0006185003600543098
+  },
+  "scenes": {
+    "scene01_white_snr15": {
+      "routed_err_rms": 0.006229077169846278,
+      "distill_refined_err_rms": 0.005865677370615831,
+      "teacher_err_rms": 0.00440578946422426,
+      "improve_vs_routed_rms": 0.00036339979923044694,
+      "gap_to_teacher_rms": 0.0014598879063915712
+    },
+    "scene02_white_snr5": {
+      "routed_err_rms": 0.010026719378768163,
+      "distill_refined_err_rms": 0.00935652749561513,
+      "teacher_err_rms": 0.007655169406256623,
+      "improve_vs_routed_rms": 0.0006701918831530321,
+      "gap_to_teacher_rms": 0.0017013580893585076
+    },
+    "scene03_pink_snr10": {
+      "routed_err_rms": 0.008077418173869585,
+      "distill_refined_err_rms": 0.007550655141274895,
+      "teacher_err_rms": 0.005288751296633242,
+      "improve_vs_routed_rms": 0.0005267630325946895,
+      "gap_to_teacher_rms": 0.0022619038446416535
+    },
+    "scene04_brown_snr8": {
+      "routed_err_rms": 0.0055480576172911,
+      "distill_refined_err_rms": 0.005268063008159152,
+      "teacher_err_rms": 0.0107550845487167,
+      "improve_vs_routed_rms": 0.00027999460913194756,
+      "gap_to_teacher_rms": -0.005487021540557548
+    },
+    "scene05_hum50_snr12": {
+      "routed_err_rms": 0.005380109944657639,
+      "distill_refined_err_rms": 0.004760053159478757,
+      "teacher_err_rms": 0.0034016719466924807,
+      "improve_vs_routed_rms": 0.0006200567851788819,
+      "gap_to_teacher_rms": 0.001358381212786276
+    },
+    "scene06_hum60_snr12": {
+      "routed_err_rms": 0.005543703231427422,
+      "distill_refined_err_rms": 0.00511728105102283,
+      "teacher_err_rms": 0.0034650824318286006,
+      "improve_vs_routed_rms": 0.0004264221804045924,
+      "gap_to_teacher_rms": 0.001652198619194229
+    },
+    "scene07_highfreq_hiss_snr10": {
+      "routed_err_rms": 0.0065455017670358155,
+      "distill_refined_err_rms": 0.006168116372479633,
+      "teacher_err_rms": 0.004064409241050096,
+      "improve_vs_routed_rms": 0.0003773853945561829,
+      "gap_to_teacher_rms": 0.0021037071314295363
+    },
+    "scene08_lowfreq_rumble_snr10": {
+      "routed_err_rms": 0.0067339105623112185,
+      "distill_refined_err_rms": 0.006314338439754183,
+      "teacher_err_rms": 0.004347696625157236,
+      "improve_vs_routed_rms": 0.0004195721225570357,
+      "gap_to_teacher_rms": 0.001966641814596947
+    },
+    "scene09_chirp_interference_snr8": {
+      "routed_err_rms": 0.016856910282946346,
+      "distill_refined_err_rms": 0.014951237698432578,
+      "teacher_err_rms": 0.0044661841108122715,
+      "improve_vs_routed_rms": 0.0019056725845137679,
+      "gap_to_teacher_rms": 0.010485053587620308
+    },
+    "scene10_impulsive_clicks_snr9": {
+      "routed_err_rms": 0.00844591253315774,
+      "distill_refined_err_rms": 0.008019827931073104,
+      "teacher_err_rms": 0.00626487502991263,
+      "improve_vs_routed_rms": 0.0004260846020846358,
+      "gap_to_teacher_rms": 0.001754952901160474
+    },
+    "scene11_intermittent_bursts_snr7": {
+      "routed_err_rms": 0.014117208696733058,
+      "distill_refined_err_rms": 0.013730866528467844,
+      "teacher_err_rms": 0.006547558731266019,
+      "improve_vs_routed_rms": 0.00038634216826521385,
+      "gap_to_teacher_rms": 0.007183307797201824
+    },
+    "scene12_babble_like_snr5": {
+      "routed_err_rms": 0.013790183941074261,
+      "distill_refined_err_rms": 0.012364309544562475,
+      "teacher_err_rms": 0.010797686133853353,
+      "improve_vs_routed_rms": 0.0014258743965117858,
+      "gap_to_teacher_rms": 0.0015666234107091226
+    },
+    "scene13_street_combo_snr6": {
+      "routed_err_rms": 0.009323598946731829,
+      "distill_refined_err_rms": 0.008682979667735699,
+      "teacher_err_rms": 0.007265963511966978,
+      "improve_vs_routed_rms": 0.0006406192789961303,
+      "gap_to_teacher_rms": 0.001417016155768721
+    },
+    "scene14_office_fan_snr9": {
+      "routed_err_rms": 0.00784798018786775,
+      "distill_refined_err_rms": 0.007366961757996715,
+      "teacher_err_rms": 0.00577876818271651,
+      "improve_vs_routed_rms": 0.0004810184298710352,
+      "gap_to_teacher_rms": 0.0015881935752802044
+    },
+    "scene15_reverb_plus_hiss_snr10": {
+      "routed_err_rms": 0.007243090391298191,
+      "distill_refined_err_rms": 0.00691498225753292,
+      "teacher_err_rms": 0.004756497581222862,
+      "improve_vs_routed_rms": 0.00032810813376527026,
+      "gap_to_teacher_rms": 0.0021584846763100587
+    }
+  }
+}

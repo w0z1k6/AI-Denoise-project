@@ -1,0 +1,107 @@
+[
+  {
+    "scene": "scene01_white_snr15",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene01_white_snr15.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene01_white_snr15_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene01_white_snr15_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene02_white_snr5",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene02_white_snr5.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene02_white_snr5_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene02_white_snr5_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene03_pink_snr10",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene03_pink_snr10.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene03_pink_snr10_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene03_pink_snr10_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene04_brown_snr8",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene04_brown_snr8.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene04_brown_snr8_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene04_brown_snr8_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene05_hum50_snr12",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene05_hum50_snr12.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene05_hum50_snr12_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene05_hum50_snr12_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene06_hum60_snr12",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene06_hum60_snr12.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene06_hum60_snr12_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene06_hum60_snr12_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene07_highfreq_hiss_snr10",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene07_highfreq_hiss_snr10.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene07_highfreq_hiss_snr10_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene07_highfreq_hiss_snr10_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene08_lowfreq_rumble_snr10",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene08_lowfreq_rumble_snr10.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene08_lowfreq_rumble_snr10_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene08_lowfreq_rumble_snr10_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene09_chirp_interference_snr8",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene09_chirp_interference_snr8.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene09_chirp_interference_snr8_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene09_chirp_interference_snr8_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene10_impulsive_clicks_snr9",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene10_impulsive_clicks_snr9.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene10_impulsive_clicks_snr9_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene10_impulsive_clicks_snr9_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene11_intermittent_bursts_snr7",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene11_intermittent_bursts_snr7.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene11_intermittent_bursts_snr7_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene11_intermittent_bursts_snr7_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene12_babble_like_snr5",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene12_babble_like_snr5.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene12_babble_like_snr5_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene12_babble_like_snr5_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene13_street_combo_snr6",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene13_street_combo_snr6.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene13_street_combo_snr6_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene13_street_combo_snr6_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene14_office_fan_snr9",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene14_office_fan_snr9.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene14_office_fan_snr9_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene14_office_fan_snr9_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  },
+  {
+    "scene": "scene15_reverb_plus_hiss_snr10",
+    "noisy_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\scene15_reverb_plus_hiss_snr10.wav",
+    "math_input_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\outputs\\routed\\scene15_reverb_plus_hiss_snr10_routed.wav",
+    "teacher_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\distill\\teacher\\scene15_reverb_plus_hiss_snr10_teacher.wav",
+    "clean_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\noisy_testset\\clean_reference.wav"
+  }
+]

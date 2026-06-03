@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Node.js
+node_modules/
+dist/
+.vite/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# LaTeX auxiliary files (keep report.pdf and sources)
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.lof
+report/*.lot
+report/*.bcf
+report/*.blg
+report/*.run.xml
+report/*.synctex.gz
+report/*.fdb_latexmk
+report/*.fls
+report/*.bbl
+
+# Accidental nested webapp data (wrong working directory)
+analysis/denoise_selection/webapp/backend/analysis/
+
+# Ephemeral web uploads (regenerated at runtime)
+analysis/denoise_selection/webapp/data/uploads/*
+analysis/denoise_selection/webapp/data/processed/*
+!analysis/denoise_selection/webapp/data/uploads/.gitkeep
+!analysis/denoise_selection/webapp/data/processed/.gitkeep
+
+# Local enhance logs
+**/enhance.log
