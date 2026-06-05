@@ -43,24 +43,53 @@ webapp/
 
 ## Run Locally
 
-### 1) Backend
+### One-click (recommended)
 
-```bash
-cd analysis/denoise_selection/webapp/backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+**Windows** — double-click or in PowerShell:
+
+```powershell
+cd analysis/denoise_selection/webapp
+.\start-webapp.ps1
+# first time / after clone:
+.\start-webapp.ps1 -InstallDeps
+# stop services on ports 8000 & 5173:
+.\start-webapp.ps1 -Stop
 ```
 
-### 2) Frontend
+Or double-click `start-webapp.bat`.
+
+**Linux / macOS / Git Bash:**
+
+```bash
+cd analysis/denoise_selection/webapp
+chmod +x start-webapp.sh
+./start-webapp.sh
+./start-webapp.sh --install   # pip + npm install
+./start-webapp.sh --stop
+```
+
+Opens two terminal windows (Windows) or background jobs (Unix). Frontend: `http://localhost:5173` · API docs: `http://127.0.0.1:8000/docs`
+
+The script sets `DEEPFILTER_CONDA_ENV=dfnet311` from `.env` (copied from `.env.example` if missing) and runs the backend from the **repository root** so data/model/distill paths resolve correctly.
+
+### Manual start
+
+#### 1) Backend
+
+```bash
+# from repository root (DEMO/)
+export DEEPFILTER_CONDA_ENV=dfnet311
+export APP_DATA_DIR=analysis/denoise_selection/webapp/data
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --app-dir analysis/denoise_selection/webapp/backend
+```
+
+#### 2) Frontend
 
 ```bash
 cd analysis/denoise_selection/webapp/frontend
 npm install
 npm run dev
 ```
-
-Frontend: `http://localhost:5173`  
-Backend docs: `http://localhost:8000/docs`
 
 ## Docker
 

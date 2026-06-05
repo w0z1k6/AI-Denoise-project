@@ -35,8 +35,14 @@ export default function GlassNav({ currentTaskId }: Props) {
   return (
     <header className="glass-nav-shell">
       <div className="glass-nav">
-        <Link to="/" className="glass-nav-brand" onClick={() => setOpen(false)}>
-          <span className="brand-dot" />
+        <Link to="/" className="glass-nav-brand brand-signal" onClick={() => setOpen(false)}>
+          <div className="brand-vu" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
           <div>
             <h1>{t("brandTitle")}</h1>
             <small>{t("brandSubtitle")}</small>

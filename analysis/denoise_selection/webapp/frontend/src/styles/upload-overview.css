@@ -360,8 +360,8 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent-orange);
-  box-shadow: 0 0 0 2px var(--accent-orange);
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber-dim, rgba(255, 176, 32, 0.4));
 }
 
 .task-pill-label {

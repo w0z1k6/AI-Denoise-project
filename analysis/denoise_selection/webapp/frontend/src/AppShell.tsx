@@ -25,7 +25,7 @@ type AppProps = {
 export default function AppShell({ taskId, setTaskId }: AppProps) {
   return (
     <div className="app">
-      <AmbientBackground />
+      <AmbientBackground taskId={taskId} />
       <GlassNav currentTaskId={taskId} />
       <main className="page-shell">
         <PageTransition taskId={taskId} setTaskId={setTaskId} />

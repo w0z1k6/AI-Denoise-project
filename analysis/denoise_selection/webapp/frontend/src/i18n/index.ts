@@ -3,7 +3,7 @@ export type Lang = "zh" | "en";
 export const dict = {
   zh: {
     brandTitle: "降噪分析台",
-    brandSubtitle: "Liquid Glass · 新拟态",
+    brandSubtitle: "Signal Console · 广播级降噪",
     navHome: "首页",
     navUpload: "上传与参数",
     navProgress: "任务进度",
@@ -148,7 +148,7 @@ export const dict = {
 
     homeHeroTitle: "智能音频降噪",
     homeHeroSubtitle: "上传、处理、对比、分析 — 一站式工作流",
-    homeHeroTagline: "专业音频工具 · Liquid Glass",
+    homeHeroTagline: "广播级信号处理 · 机架式工作流",
     homeStart: "开始分析",
     homeViewResults: "查看结果",
     homeStatCharts: "分析图表",
@@ -172,7 +172,7 @@ export const dict = {
   },
   en: {
     brandTitle: "Denoise Studio",
-    brandSubtitle: "Liquid Glass · Neumorphism",
+    brandSubtitle: "Signal Console · Rack UI",
     navHome: "Home",
     navUpload: "Upload",
     navProgress: "Progress",
@@ -317,7 +317,7 @@ export const dict = {
 
     homeHeroTitle: "Intelligent Denoising",
     homeHeroSubtitle: "Upload, process, compare, analyze — all in one flow",
-    homeHeroTagline: "Liquid Glass · Spatial UI",
+    homeHeroTagline: "Broadcast-grade denoise lab",
     homeStart: "Start Analysis",
     homeViewResults: "View Results",
     homeStatCharts: "Analysis Charts",

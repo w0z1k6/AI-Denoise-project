@@ -23,7 +23,7 @@ function readLang(): Lang {
 function readTheme(): Theme {
   const v = localStorage.getItem("ui_theme");
   if (v === "dark" || v === "light") return v;
-  return "light";
+  return "dark";
 }
 
 export function I18nProvider({ children }: PropsWithChildren) {
