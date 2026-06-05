@@ -76,6 +76,7 @@ export const dict = {
     kurtosis: "峰度",
     waveformOriginal: "原始波形",
     waveformDenoised: "降噪波形",
+    waveScanning: "SCANNING…",
     pipelineTitle: "处理链路",
     pipelineMismatch: "算法未生效",
     pipelineMismatchHint:
@@ -245,6 +246,7 @@ export const dict = {
     kurtosis: "Kurtosis",
     waveformOriginal: "Original Waveform",
     waveformDenoised: "Denoised Waveform",
+    waveScanning: "SCANNING…",
     pipelineTitle: "Processing pipeline",
     pipelineMismatch: "Engine mismatch",
     pipelineMismatchHint:

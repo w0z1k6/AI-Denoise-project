@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import ABXTestPanel from "../components/ABXTestPanel";
 import AudioComparePlayer from "../components/AudioComparePlayer";
 import BookmarkList from "../components/BookmarkList";
-import GlassCard from "../components/GlassCard";
 import PipelineSummary from "../components/PipelineSummary";
-import StatChip from "../components/StatChip";
+import RackPanel from "../components/RackPanel";
 import StatusBadge from "../components/StatusBadge";
 import WaveformPanel from "../components/WaveformPanel";
 import { useI18n } from "../i18n/I18nContext";
 import { addBookmark, audioUrl, getAbxStats, getHistory, getMetrics, postAbx } from "../lib/api";
+import { isDeepfilterMismatch } from "../lib/pipelineUtils";
 import type { MetricsPayload, TaskItem } from "../types/api";
 
 type Props = {
@@ -39,18 +39,29 @@ export default function ResultOverviewPage({ taskId }: Props) {
   const route = metrics?.route ?? task?.route ?? [];
   const reason = metrics?.reason ?? task?.reason ?? "";
   const status = task?.status ?? "completed";
+  const mismatch = isDeepfilterMismatch(method, route, reason);
+  const routeText = route.length ? route.join(" → ") : "—";
 
   return (
     <div className="column gap stagger overview-page">
-      <div className="overview-header glass-card" style={{ padding: "12px 16px" }}>
-        <div>
-          <span className="section-subtitle">{t("overviewStatusTitle")}</span>
-          <h3 className="section-title" style={{ marginTop: 4 }}>
-            {task?.filename ?? taskId}
-          </h3>
+      <RackPanel
+        moduleId="MOD-01"
+        channel="TASK"
+        led={mismatch ? "error" : status === "completed" ? "active" : "processing"}
+        alert={mismatch}
+        className="task-rack-panel"
+      >
+        <div className="task-rack-bar">
+          <div>
+            <span className="section-subtitle">{t("overviewStatusTitle")}</span>
+            <h3 className="section-title task-rack-filename">{task?.filename ?? taskId}</h3>
+            <p className="task-rack-meta">
+              {method} · {routeText}
+            </p>
+          </div>
+          <StatusBadge status={status} />
         </div>
-        <StatusBadge status={status} />
-      </div>
+      </RackPanel>
 
       {!metricsLoading && metrics ? (
         <PipelineSummary method={method} route={route} reason={reason} />
@@ -82,22 +93,48 @@ export default function ResultOverviewPage({ taskId }: Props) {
           setTask(items.find((x) => x.task_id === taskId) ?? null);
         }}
       />
-      <GlassCard title={t("metricTitle")} subtitle={t("metricSubtitle")}>
-        <div className="grid3">
-          <StatChip label={t("methodLabel")} value={method} />
-          <StatChip className="stat-chip-highlight" label={t("routeLabel")} value={route.join(" → ") || "-"} />
-          <StatChip
-            className={method === "deepfilter" && !route.some((r) => r.includes("deepfilter")) ? "stat-chip-alert" : ""}
-            label={t("reasonLabel")}
-            value={reason || "-"}
-          />
-          <StatChip label={t("inputSnr")} value={metrics?.snr_db?.input_est?.toFixed(3) ?? "-"} />
-          <StatChip label={t("outputSnr")} value={metrics?.snr_db?.output_est?.toFixed(3) ?? "-"} />
-          <StatChip label={t("deltaSnr")} value={metrics?.snr_db?.delta?.toFixed(3) ?? "-"} />
-          <StatChip label={t("residualRms")} value={metrics?.rms?.residual?.toFixed(6) ?? "-"} />
-          <StatChip label={t("kurtosis")} value={metrics?.residual_stats?.kurtosis?.toFixed(3) ?? "-"} />
+      <RackPanel moduleId="MOD-05" channel="METER" led="active" title={t("metricTitle")} subtitle={t("metricSubtitle")}>
+        <div className="metric-readout-grid">
+          <div className="metric-readout">
+            <span className="metric-readout-label">{t("inputSnr")}</span>
+            <span className="metric-readout-value metric-readout-value-lg">
+              {metrics?.snr_db?.input_est?.toFixed(3) ?? "—"}
+            </span>
+          </div>
+          <div className="metric-readout">
+            <span className="metric-readout-label">{t("outputSnr")}</span>
+            <span className="metric-readout-value metric-readout-value-lg">
+              {metrics?.snr_db?.output_est?.toFixed(3) ?? "—"}
+            </span>
+          </div>
+          <div className="metric-readout">
+            <span className="metric-readout-label">{t("deltaSnr")}</span>
+            <span className="metric-readout-value metric-readout-value-lg">
+              {metrics?.snr_db?.delta?.toFixed(3) ?? "—"}
+            </span>
+          </div>
+          <div className="metric-readout">
+            <span className="metric-readout-label">{t("residualRms")}</span>
+            <span className="metric-readout-value">{metrics?.rms?.residual?.toFixed(6) ?? "—"}</span>
+          </div>
+          <div className="metric-readout">
+            <span className="metric-readout-label">{t("kurtosis")}</span>
+            <span className="metric-readout-value">{metrics?.residual_stats?.kurtosis?.toFixed(3) ?? "—"}</span>
+          </div>
+          <div className="metric-readout">
+            <span className="metric-readout-label">{t("methodLabel")}</span>
+            <span className="metric-readout-value">{method}</span>
+          </div>
+          <div className="metric-readout span-2">
+            <span className="metric-readout-label">{t("routeLabel")}</span>
+            <span className="metric-readout-value">{routeText}</span>
+          </div>
+          <div className={`metric-readout span-4 ${mismatch ? "pipeline-alert" : ""}`}>
+            <span className="metric-readout-label">{t("reasonLabel")}</span>
+            <span className="metric-readout-value">{reason || "—"}</span>
+          </div>
         </div>
-      </GlassCard>
+      </RackPanel>
     </div>
   );
 }

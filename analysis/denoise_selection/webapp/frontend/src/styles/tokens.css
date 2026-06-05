@@ -99,13 +99,14 @@
   --text-inverse: #f2f4f8;
 
   --signal: #007a62;
-  --signal-dim: rgba(0, 122, 98, 0.12);
-  --signal-glow: rgba(0, 122, 98, 0.25);
+  --signal-dim: rgba(0, 122, 98, 0.14);
+  --signal-glow: rgba(0, 122, 98, 0.32);
   --amber: #c47a00;
+  --amber-dim: rgba(196, 122, 0, 0.14);
 
   --panel-border: rgba(10, 15, 24, 0.12);
   --panel-border-strong: rgba(0, 122, 98, 0.45);
-  --rack-line: rgba(10, 15, 24, 0.06);
+  --rack-line: rgba(10, 15, 24, 0.12);
 
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-bg-strong: rgba(255, 255, 255, 0.92);

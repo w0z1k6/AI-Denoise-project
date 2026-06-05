@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useI18n } from "../i18n/I18nContext";
+import { abbreviateTaskId } from "../lib/pipelineUtils";
 import GlassButton from "./GlassButton";
 
 type Props = {
@@ -32,6 +33,8 @@ export default function GlassNav({ currentTaskId }: Props) {
     }
   };
 
+  const taskDisplay = currentTaskId ? abbreviateTaskId(currentTaskId) : "—";
+
   return (
     <header className="glass-nav-shell">
       <div className="glass-nav">
@@ -62,9 +65,9 @@ export default function GlassNav({ currentTaskId }: Props) {
           ))}
         </nav>
         <div className="glass-nav-right">
-          <span className="task-pill" title={currentTaskId || undefined}>
+          <span className={`task-pill ${copied ? "task-pill-copied" : ""}`} title={currentTaskId || undefined}>
             <span className="task-pill-label">{t("taskLabel")}</span>
-            <code>{currentTaskId || "—"}</code>
+            <code>{taskDisplay}</code>
             {currentTaskId ? (
               <button type="button" className="task-copy-btn" onClick={copyTask}>
                 {copied ? t("copied") : t("copyTaskId")}

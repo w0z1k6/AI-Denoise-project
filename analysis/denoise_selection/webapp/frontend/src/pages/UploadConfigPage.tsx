@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FileDropZone from "../components/FileDropZone";
 import GlassButton from "../components/GlassButton";
-import GlassCard from "../components/GlassCard";
 import MethodSelector from "../components/MethodSelector";
+import RackPanel from "../components/RackPanel";
 import { useI18n } from "../i18n/I18nContext";
 import { probeAudioFile, type AudioFileMeta } from "../lib/audioMeta";
 import { usesNoisereduceStrength } from "../lib/methodOptions";
@@ -24,6 +24,13 @@ export default function UploadConfigPage({ setTaskId }: Props) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  const flowSteps = [
+    { n: "01", key: "flowUpload", active: true },
+    { n: "02", key: "flowMethod", active: false },
+    { n: "03", key: "flowProgress", active: false },
+    { n: "04", key: "flowListen", active: false },
+  ] as const;
+
   useEffect(() => {
     if (!file) {
       setMeta(null);
@@ -39,6 +46,7 @@ export default function UploadConfigPage({ setTaskId }: Props) {
   }, [file]);
 
   const strengthEnabled = usesNoisereduceStrength(method);
+  const led = loading ? "processing" : file ? "active" : "idle";
 
   const submit = async () => {
     if (!file) return;
@@ -63,8 +71,22 @@ export default function UploadConfigPage({ setTaskId }: Props) {
   };
 
   return (
-    <GlassCard className="stagger upload-page" title={t("uploadTitle")} subtitle={t("uploadSubtitle")}>
-      <p className="upload-flow-hint">{t("uploadFlowHint")}</p>
+    <RackPanel
+      className="stagger upload-page"
+      moduleId="MOD-02"
+      channel="INPUT"
+      led={led}
+      title={t("uploadTitle")}
+      subtitle={t("uploadSubtitle")}
+    >
+      <ol className="upload-flow-strip" aria-label={t("uploadFlowHint")}>
+        {flowSteps.map((s) => (
+          <li key={s.n} className={s.active ? "is-active" : ""}>
+            <span className="upload-flow-n">{s.n}</span>
+            {t(s.key)}
+          </li>
+        ))}
+      </ol>
       <div className="column gap">
         <FileDropZone
           file={file}
@@ -103,8 +125,12 @@ export default function UploadConfigPage({ setTaskId }: Props) {
             {loading ? t("uploading") : t("uploadBtn")}
           </GlassButton>
         </div>
-        {msg ? <p className={msg.includes("Error") || msg.includes("失败") ? "error" : "muted"}>{msg}</p> : null}
+        {msg ? (
+          <p className={msg.includes("Error") || msg.includes("失败") ? "error" : "muted"} role="status" aria-live="polite">
+            {msg}
+          </p>
+        ) : null}
       </div>
-    </GlassCard>
+    </RackPanel>
   );
 }

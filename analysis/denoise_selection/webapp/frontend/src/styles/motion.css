@@ -18,7 +18,7 @@
 }
 
 .page-route {
-  animation: fadeInUp var(--dur-base) var(--ease-standard) both;
+  animation: fadeInUp 280ms var(--ease-standard) both;
 }
 
 .stagger > * {

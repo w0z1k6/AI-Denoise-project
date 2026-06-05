@@ -363,7 +363,23 @@
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr));
-  gap: var(--space-12);
+  gap: 20px;
+}
+
+.plot-shell-head {
+  margin-bottom: 8px;
+  min-height: 36px;
+  align-items: center;
+}
+
+.glass-btn-danger {
+  border-color: rgba(255, 92, 106, 0.45) !important;
+  color: var(--danger) !important;
+}
+
+.task-pill-copied {
+  border-color: var(--panel-border-strong);
+  background: var(--signal-dim);
 }
 
 .collapse-panel {
