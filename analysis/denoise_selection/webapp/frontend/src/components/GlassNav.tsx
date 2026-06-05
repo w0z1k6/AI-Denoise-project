@@ -14,6 +14,7 @@ const navPaths = [
   { to: "/progress", key: "navProgress" as const, end: false },
   { to: "/overview", key: "navOverview" as const, end: false },
   { to: "/charts", key: "navCharts" as const, end: false },
+  { to: "/showcase", key: "navShowcase" as const, end: false },
   { to: "/history", key: "navHistory" as const, end: false },
 ];
 
@@ -58,7 +59,9 @@ export default function GlassNav({ currentTaskId }: Props) {
               to={item.to}
               end={item.end}
               onClick={() => setOpen(false)}
-              className={({ isActive }) => `glass-nav-link ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `glass-nav-link ${isActive ? "active" : ""} ${isActive && item.to === "/showcase" ? "glass-nav-link-showcase" : ""}`.trim()
+              }
             >
               {t(item.key)}
             </NavLink>

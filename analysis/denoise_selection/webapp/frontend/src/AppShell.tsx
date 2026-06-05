@@ -10,8 +10,10 @@ type Props = {
 
 function PageTransition({ taskId, setTaskId }: Props) {
   const location = useLocation();
+  const isShowcase = location.pathname.startsWith("/showcase");
+  const routeKey = isShowcase ? "/showcase" : location.pathname;
   return (
-    <div className="page-route" key={location.pathname}>
+    <div className={`page-route ${isShowcase ? "page-route-showcase" : ""}`} key={routeKey}>
       <AppRoutes taskId={taskId} setTaskId={setTaskId} />
     </div>
   );

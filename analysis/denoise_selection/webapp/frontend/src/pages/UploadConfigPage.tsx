@@ -19,6 +19,14 @@ export default function UploadConfigPage({ setTaskId }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [meta, setMeta] = useState<AudioFileMeta | null>(null);
   const [method, setMethod] = useState("auto");
+
+  useEffect(() => {
+    const pre = sessionStorage.getItem("upload_method_prefill");
+    if (pre) {
+      setMethod(pre);
+      sessionStorage.removeItem("upload_method_prefill");
+    }
+  }, []);
   const [runDistill, setRunDistill] = useState(false);
   const [strength, setStrength] = useState(0.8);
   const [loading, setLoading] = useState(false);

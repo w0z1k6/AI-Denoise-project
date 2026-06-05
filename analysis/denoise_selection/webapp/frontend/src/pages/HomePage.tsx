@@ -39,6 +39,9 @@ export default function HomePage() {
           <Link to="/overview" className="console-cta-ghost">
             {t("homeViewResults")}
           </Link>
+          <Link to="/showcase" className="console-cta-ghost">
+            {t("homeEnterShowcase")}
+          </Link>
         </div>
       </section>
 

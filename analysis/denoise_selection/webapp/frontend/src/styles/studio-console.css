@@ -359,6 +359,17 @@ body {
   height: 1px;
 }
 
+.glass-nav-link.active.glass-nav-link-showcase {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.glass-nav-link.active.glass-nav-link-showcase::after {
+  height: 2px;
+  background: var(--signal);
+}
+
 .task-pill code {
   font-family: var(--font-mono);
   font-size: 0.72rem;
