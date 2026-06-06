@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Plot from "react-plotly.js";
 import Plotly from "plotly.js-dist-min";
 import GlassButton from "../components/GlassButton";
-import GlassCard from "../components/GlassCard";
+import RackPanel from "../components/RackPanel";
 import StatChip from "../components/StatChip";
 import { useI18n } from "../i18n/I18nContext";
 import { getPlots } from "../lib/api";
@@ -39,6 +39,10 @@ function loadChartHeight(): number {
   return 350;
 }
 
+function groupCode(index: number): string {
+  return `GRP-${String(index + 1).padStart(2, "0")}`;
+}
+
 function PlotCard({
   plot,
   theme,
@@ -61,7 +65,7 @@ function PlotCard({
 
   return (
     <div className="plot-shell">
-      <div className="row between" style={{ marginBottom: 8 }}>
+      <div className="row between plot-shell-head">
         <h4 className="section-title plot-title">{highlightText(plot.title, keyword)}</h4>
         <GlassButton variant="accent" onClick={exportPng}>
           {t("exportPng")}
@@ -138,7 +142,7 @@ export default function ChartCenterPage({ taskId }: Props) {
 
   return (
     <div className="column gap stagger">
-      <GlassCard title={t("chartsTitle")} subtitle={t("chartsSubtitle")}>
+      <RackPanel moduleId="MOD-07" channel="PLOT" led="active" title={t("chartsTitle")} subtitle={t("chartsSubtitle")}>
         <div className="chart-summary-bar">
           <StatChip className="stat-chip-accent" label={t("groupCount")} value={String(groups.length)} />
           <StatChip label={t("plotCount")} value={String(totalPlots)} />
@@ -171,19 +175,22 @@ export default function ChartCenterPage({ taskId }: Props) {
             </GlassButton>
           </div>
         </div>
-      </GlassCard>
+      </RackPanel>
 
       {filteredGroups.length === 0 ? (
-        <GlassCard>
+        <RackPanel moduleId="MOD-07" channel="PLOT" led="idle">
           <p className="muted">{t("noMatch")}</p>
-        </GlassCard>
+        </RackPanel>
       ) : null}
 
-      {filteredGroups.map((g) => (
+      {filteredGroups.map((g, idx) => (
         <section key={g.group} className="chart-group">
           <div className="chart-group-header">
             <div>
-              <h3 className="chart-group-title">{highlightText(g.title, keyword)}</h3>
+              <h3 className="chart-group-title">
+                <span className="chart-group-code">{groupCode(idx)}</span>
+                {highlightText(g.title, keyword)}
+              </h3>
               <span className="chart-group-count">{g.plots.length} charts</span>
             </div>
             <GlassButton variant="secondary" onClick={() => toggleGroup(g.group)}>

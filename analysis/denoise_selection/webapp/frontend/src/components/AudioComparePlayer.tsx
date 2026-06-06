@@ -1,26 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n/I18nContext";
+import { fadeVolumes } from "../lib/audioCrossfade";
 import GlassButton from "./GlassButton";
-import GlassCard from "./GlassCard";
+import RackPanel from "./RackPanel";
 
 type Props = {
   originalUrl: string;
   denoisedUrl: string;
   residualUrl?: string;
 };
-
-function fadeVolumes(from: HTMLAudioElement, to: HTMLAudioElement, durationMs = 15): void {
-  const start = performance.now();
-  const fromStart = from.volume;
-  const toStart = to.volume;
-  const tick = (ts: number) => {
-    const k = Math.min(1, (ts - start) / durationMs);
-    from.volume = Math.max(0, fromStart * (1 - k));
-    to.volume = Math.min(1, toStart + (1 - toStart) * k);
-    if (k < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
 
 export default function AudioComparePlayer({ originalUrl, denoisedUrl, residualUrl }: Props) {
   const { t } = useI18n();
@@ -76,25 +64,18 @@ export default function AudioComparePlayer({ originalUrl, denoisedUrl, residualU
     else a.pause();
   };
 
+  const channels: { key: "original" | "denoised" | "residual"; label: string; volKey: keyof typeof vol; show: boolean }[] = [
+    { key: "original", label: t("trackOriginal"), volKey: "original", show: true },
+    { key: "denoised", label: t("trackDenoised"), volKey: "denoised", show: true },
+    { key: "residual", label: t("trackResidual"), volKey: "residual", show: !!residualUrl },
+  ];
+
   return (
-    <GlassCard title={t("audioTitle")} subtitle={t("audioSubtitle")}>
-      <div className="row gap">
+    <RackPanel moduleId="MOD-04" channel="A/B" led="active" title={t("audioTitle")} subtitle={t("audioSubtitle")}>
+      <div className="mixer-transport">
         <GlassButton variant="primary" onClick={playPause}>
           {t("playPause")}
         </GlassButton>
-        <GlassButton variant={active === "original" ? "primary" : "secondary"} onClick={() => syncSwitch("original")}>
-          {t("trackOriginal")}
-        </GlassButton>
-        <GlassButton variant={active === "denoised" ? "primary" : "secondary"} onClick={() => syncSwitch("denoised")}>
-          {t("trackDenoised")}
-        </GlassButton>
-        {residualUrl ? (
-          <GlassButton variant={active === "residual" ? "primary" : "secondary"} onClick={() => syncSwitch("residual")}>
-            {t("trackResidual")}
-          </GlassButton>
-        ) : null}
-      </div>
-      <div className="grid2" style={{ marginTop: "12px" }}>
         <label>
           {t("playbackSpeed")}
           <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
@@ -107,23 +88,36 @@ export default function AudioComparePlayer({ originalUrl, denoisedUrl, residualU
           {t("loopPlayback")} <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
         </label>
       </div>
-      <div className="grid3" style={{ marginTop: "12px" }}>
-        <label>
-          {t("volA")}{" "}
-          <input type="range" min={0} max={1} step={0.01} value={vol.original} onChange={(e) => setVol((v) => ({ ...v, original: Number(e.target.value) }))} />
-        </label>
-        <label>
-          {t("volB")}{" "}
-          <input type="range" min={0} max={1} step={0.01} value={vol.denoised} onChange={(e) => setVol((v) => ({ ...v, denoised: Number(e.target.value) }))} />
-        </label>
-        <label>
-          {t("volR")}{" "}
-          <input type="range" min={0} max={1} step={0.01} value={vol.residual} onChange={(e) => setVol((v) => ({ ...v, residual: Number(e.target.value) }))} />
-        </label>
+      <div className="mixer-strip">
+        {channels
+          .filter((c) => c.show)
+          .map((c) => (
+            <div key={c.key} className={`mixer-channel ${active === c.key ? "is-active" : ""}`}>
+              <div className="mixer-channel-head">
+                <span className={`rack-led ${active === c.key ? "rack-led-active" : "rack-led-idle"}`} />
+                <span>{c.label}</span>
+              </div>
+              <GlassButton
+                variant={active === c.key ? "primary" : "secondary"}
+                onClick={() => syncSwitch(c.key)}
+              >
+                {active === c.key ? "ON" : "SEL"}
+              </GlassButton>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={vol[c.volKey]}
+                onChange={(e) => setVol((v) => ({ ...v, [c.volKey]: Number(e.target.value) }))}
+                aria-label={c.label}
+              />
+            </div>
+          ))}
       </div>
       <audio ref={oRef} src={originalUrl} preload="auto" />
       <audio ref={dRef} src={denoisedUrl} preload="auto" />
       {residualUrl ? <audio ref={rRef} src={residualUrl} preload="auto" /> : null}
-    </GlassCard>
+    </RackPanel>
   );
 }

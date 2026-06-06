@@ -48,6 +48,7 @@ export default function FileDropZone({ file, meta, onFile }: Props) {
         onChange={(e) => pick(e.target.files?.[0] ?? null)}
       />
       <div className="file-drop-icon" aria-hidden="true" />
+      <div className="file-drop-wave-deco" aria-hidden="true" />
       {file ? (
         <div className="file-drop-body">
           <strong>{file.name}</strong>

@@ -10,8 +10,10 @@ type Props = {
 
 function PageTransition({ taskId, setTaskId }: Props) {
   const location = useLocation();
+  const isShowcase = location.pathname.startsWith("/showcase");
+  const routeKey = isShowcase ? "/showcase" : location.pathname;
   return (
-    <div className="page-route" key={location.pathname}>
+    <div className={`page-route ${isShowcase ? "page-route-showcase" : ""}`} key={routeKey}>
       <AppRoutes taskId={taskId} setTaskId={setTaskId} />
     </div>
   );
@@ -25,7 +27,7 @@ type AppProps = {
 export default function AppShell({ taskId, setTaskId }: AppProps) {
   return (
     <div className="app">
-      <AmbientBackground />
+      <AmbientBackground taskId={taskId} />
       <GlassNav currentTaskId={taskId} />
       <main className="page-shell">
         <PageTransition taskId={taskId} setTaskId={setTaskId} />

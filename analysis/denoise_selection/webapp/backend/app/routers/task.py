@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from app.core.errors import ApiError
 from app.schemas.models import TaskStatusResponse
 from app.services.file_store import FILE_STORE
-from app.services.task_store import TASK_STORE
+from app.services.task_store import TASK_STORE, TaskStoreCorruptError
 
 router = APIRouter(prefix="/api", tags=["task"])
 
@@ -16,6 +16,12 @@ def task_status(task_id: str) -> TaskStatusResponse:
         payload = TASK_STORE.get(task_id)
     except FileNotFoundError:
         raise ApiError("task_not_found", f"Task not found: {task_id}", 404)
+    except TaskStoreCorruptError:
+        raise ApiError(
+            "task_state_unavailable",
+            "Task state is temporarily unavailable; retry in a moment.",
+            503,
+        )
     return TaskStatusResponse(
         task_id=task_id,
         status=payload["status"],

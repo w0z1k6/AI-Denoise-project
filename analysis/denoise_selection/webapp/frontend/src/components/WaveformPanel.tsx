@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function WaveformPanel({ url, title, onSeek }: Props) {
-  const { theme } = useI18n();
+  const { theme, t } = useI18n();
   const boxRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,8 @@ export default function WaveformPanel({ url, title, onSeek }: Props) {
     if (!boxRef.current) return;
     setLoading(true);
     wsRef.current?.destroy();
-    const waveColor = theme === "light" ? "#93c5fd" : "#6b8cff";
-    const progressColor = theme === "light" ? "#2563eb" : "#2a4cff";
+    const waveColor = theme === "light" ? "rgba(0, 122, 98, 0.35)" : "rgba(20, 245, 200, 0.35)";
+    const progressColor = theme === "light" ? "#007a62" : "#14f5c8";
     wsRef.current = WaveSurfer.create({
       container: boxRef.current,
       url,
@@ -41,9 +41,14 @@ export default function WaveformPanel({ url, title, onSeek }: Props) {
   }, [url, onSeek, theme]);
 
   return (
-    <GlassCard title={title}>
+    <GlassCard title={title} className="rack-no-corner-led">
       <div className="wave-host-wrap">
-        {loading ? <div className="wave-skeleton" aria-hidden="true" /> : null}
+        {loading ? (
+          <>
+            <p className="wave-scan-label">{t("waveScanning")}</p>
+            <div className="wave-skeleton" aria-hidden="true" />
+          </>
+        ) : null}
         <div ref={boxRef} className="wave-host" />
       </div>
     </GlassCard>

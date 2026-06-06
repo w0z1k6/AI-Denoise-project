@@ -45,8 +45,16 @@ body {
 .section-title {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-primary);
+}
+
+code,
+.history-task-id,
+.history-route {
+  font-family: var(--font-mono);
 }
 
 .section-subtitle {

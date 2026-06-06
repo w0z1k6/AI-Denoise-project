@@ -4,6 +4,11 @@ import ChartCenterPage from "../pages/ChartCenterPage";
 import HistoryPage from "../pages/HistoryPage";
 import HomePage from "../pages/HomePage";
 import ResultOverviewPage from "../pages/ResultOverviewPage";
+import AlgorithmAtlasPage from "../pages/showcase/AlgorithmAtlasPage";
+import CompareCinemaPage from "../pages/showcase/CompareCinemaPage";
+import PipelineTheaterPage from "../pages/showcase/PipelineTheaterPage";
+import ShowcaseHubPage from "../pages/showcase/ShowcaseHubPage";
+import SignalMonitorPage from "../pages/showcase/SignalMonitorPage";
 import TaskProgressPage from "../pages/TaskProgressPage";
 import UploadConfigPage from "../pages/UploadConfigPage";
 
@@ -21,6 +26,11 @@ export function AppRoutes({ taskId, setTaskId }: Props): ReactElement {
       <Route path="/overview" element={<ResultOverviewPage taskId={taskId} />} />
       <Route path="/charts" element={<ChartCenterPage taskId={taskId} />} />
       <Route path="/history" element={<HistoryPage setTaskId={setTaskId} />} />
+      <Route path="/showcase" element={<ShowcaseHubPage taskId={taskId} />} />
+      <Route path="/showcase/algorithms" element={<AlgorithmAtlasPage />} />
+      <Route path="/showcase/pipeline" element={<PipelineTheaterPage taskId={taskId} />} />
+      <Route path="/showcase/monitor" element={<SignalMonitorPage taskId={taskId} />} />
+      <Route path="/showcase/cinema" element={<CompareCinemaPage taskId={taskId} />} />
     </Routes>
   );
 }

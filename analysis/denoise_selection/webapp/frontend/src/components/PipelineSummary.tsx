@@ -1,4 +1,5 @@
 import { useI18n } from "../i18n/I18nContext";
+import { isDeepfilterMismatch } from "../lib/pipelineUtils";
 
 type Props = {
   method: string;
@@ -6,24 +7,17 @@ type Props = {
   reason: string;
 };
 
-function isDeepfilterMismatch(method: string, route: string[], reason: string): boolean {
-  if (method !== "deepfilter") return false;
-  const routeOk = route.some((r) => r.toLowerCase().includes("deepfilter"));
-  const reasonOk = reason.toLowerCase().includes("deepfilter");
-  const fallback =
-    reason.toLowerCase().includes("fallback") ||
-    reason.toLowerCase().includes("unavailable") ||
-    route.some((r) => r.includes("omlsa") && !routeOk);
-  return !routeOk || fallback || (!reasonOk && reason.length > 0);
-}
-
 export default function PipelineSummary({ method, route, reason }: Props) {
   const { t } = useI18n();
   const mismatch = isDeepfilterMismatch(method, route, reason);
   const routeText = route.length ? route.join(" → ") : "—";
 
   return (
-    <div className={`pipeline-summary ${mismatch ? "pipeline-alert" : ""}`}>
+    <div className={`pipeline-summary rack-no-corner-led ${mismatch ? "pipeline-alert rack-panel-alert" : ""}`}>
+      <div className="rack-panel-head">
+        <span className="rack-panel-id">MOD-03 / PIPELINE</span>
+        <span className={`rack-led ${mismatch ? "rack-led-error" : "rack-led-active"}`} aria-hidden="true" />
+      </div>
       <div className="pipeline-summary-head">
         <h3 className="section-title">{t("pipelineTitle")}</h3>
         {mismatch ? <span className="pipeline-warn-badge">{t("pipelineMismatch")}</span> : null}

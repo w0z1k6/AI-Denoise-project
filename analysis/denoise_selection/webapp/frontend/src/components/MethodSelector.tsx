@@ -11,24 +11,32 @@ export default function MethodSelector({ value, onChange }: Props) {
   const { t } = useI18n();
   const hintKey = methodHintKey(value) as DictKey | "";
   const hint = hintKey ? t(hintKey) : "";
+  const showEnv = value === "deepfilter";
 
   return (
     <div className="method-selector">
       <label className="field-label" htmlFor="method-select">
         {t("method")}
       </label>
-      <select id="method-select" value={value} onChange={(e) => onChange(e.target.value)}>
-        {METHOD_GROUP_ORDER.map((group) => (
-          <optgroup key={group} label={t(`methodGroup_${group}` as DictKey)}>
-            {METHOD_OPTIONS.filter((m) => m.group === group).map((m) => (
-              <option key={m.value} value={m.value}>
-                {t(m.labelKey as DictKey)}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-      {hint ? <p className="method-hint">{hint}</p> : null}
+      <div className="method-select-wrap">
+        <select id="method-select" value={value} onChange={(e) => onChange(e.target.value)}>
+          {METHOD_GROUP_ORDER.map((group) => (
+            <optgroup key={group} label={t(`methodGroup_${group}` as DictKey)}>
+              {METHOD_OPTIONS.filter((m) => m.group === group).map((m) => (
+                <option key={m.value} value={m.value}>
+                  {t(m.labelKey as DictKey)}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+      {hint ? (
+        <div className="method-lcd">
+          {showEnv ? <span className="method-env-badge">ENV</span> : null}
+          <span>{hint}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
