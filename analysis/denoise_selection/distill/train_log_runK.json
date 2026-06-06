@@ -1,0 +1,9 @@
+{
+  "checkpoint": "C:\\Users\\shackelten\\AI-Denoise-project\\analysis\\denoise_selection\\distill\\checkpoints\\student_runK.pt",
+  "device": "cpu",
+  "steps_run": 25814,
+  "elapsed_sec": 1204.2498903274536,
+  "final_train_loss": 0.29987168312072754,
+  "val_l1_mask": 0.23363018405658229,
+  "lr": 0.0005
+}

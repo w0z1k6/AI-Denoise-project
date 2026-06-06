@@ -3,14 +3,15 @@
   "n_fft": 512,
   "hop": 128,
   "chunk_seconds": 1.0,
-  "max_train_seconds": 900,
-  "max_steps": 1200,
+  "max_train_seconds": 1200,
+  "max_steps": 50000,
   "batch_size": 1,
   "learning_rate": 0.0005,
   "loss_weights": {
     "distill_l1": 1.0,
     "mag_compress": 0.3,
-    "clean_aux_mag": 0.15
+    "clean_aux_mag": 0.15,
+    "mrstft": 0.5 
   },
   "compress_exponent": 0.5,
   "train_residual_alpha": 0.8,

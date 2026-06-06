@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from train_student_distill import TinyResidualRefiner
 import argparse
 import json
 from pathlib import Path
@@ -8,22 +8,6 @@ import numpy as np
 import soundfile as sf
 import torch
 import torch.nn as nn
-
-
-class TinyResidualRefiner(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(2, 16, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 1, kernel_size=1),
-            nn.Tanh(),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
 
 
 def load_mono(path: Path) -> tuple[np.ndarray, int]:

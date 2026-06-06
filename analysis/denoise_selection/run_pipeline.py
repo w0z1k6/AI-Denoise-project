@@ -31,7 +31,7 @@ METHODS: dict[str, Callable] = {
 
 def list_scenes(noisy_dir: Path) -> list[Path]:
     return sorted(
-        [p for p in noisy_dir.glob("scene*.wav") if p.name.lower() != "clean_reference.wav"],
+        [p for p in noisy_dir.glob("[sa]*.wav") if p.name.lower() != "clean_reference.wav"],
         key=lambda p: p.name,
     )
 
