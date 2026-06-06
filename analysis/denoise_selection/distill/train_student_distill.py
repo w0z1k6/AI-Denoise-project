@@ -12,20 +12,35 @@ import torch.nn as nn
 
 
 class TinyResidualRefiner(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(2, 16, kernel_size=3, padding=1),
+    
+        self.conv1 = nn.Conv2d(2, 32, kernel_size=3, padding=1)
+        
+        self.res1 = nn.Sequential(
+            nn.Conv2d(32, 32, kernel_size=3, padding=2, dilation=2),
             nn.ReLU(),
-            nn.Conv2d(16, 16, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(16, 1, kernel_size=1),
-            nn.Tanh(),  # residual in [-1,1]
+            nn.Conv2d(32, 32, kernel_size=3, padding=1),
         )
+        self.res2 = nn.Sequential(
+            nn.Conv2d(32, 32, kernel_size=3, padding=4, dilation=4),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, kernel_size=3, padding=1),
+        )
+        self.res3 = nn.Sequential(
+            nn.Conv2d(32, 32, kernel_size=3, padding=8, dilation=8),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, kernel_size=3, padding=1),
+        )
+        self.out = nn.Conv2d(32, 1, kernel_size=1)
+        self.act = nn.Tanh()
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
-
+    def forward(self, x):
+        x = torch.relu(self.conv1(x))
+        x = x + self.res1(x)
+        x = x + self.res2(x)
+        x = x + self.res3(x)
+        return self.act(self.out(x))
 
 def stft_torch(x: torch.Tensor, n_fft: int, hop: int, win: torch.Tensor) -> torch.Tensor:
     return torch.stft(
@@ -75,6 +90,24 @@ def compressed_mag_loss(y_hat: torch.Tensor, y_ref: torch.Tensor, c: float) -> t
     return torch.mean((mag_hat - mag_ref) ** 2)
 
 
+def multi_resolution_stft_loss(
+    y_hat_wav: torch.Tensor,
+    y_ref_wav: torch.Tensor,
+    device: torch.device,
+) -> torch.Tensor:
+    loss = torch.tensor(0.0, device=device)
+    for n_fft in [512, 1024, 2048]:
+        hop = n_fft // 4
+        win = torch.hann_window(n_fft, device=device)
+        S_hat = torch.stft(y_hat_wav, n_fft, hop, window=win, return_complex=True)
+        S_ref = torch.stft(y_ref_wav, n_fft, hop, window=win, return_complex=True)
+        mag_hat = torch.abs(S_hat)
+        mag_ref = torch.abs(S_ref)
+        loss += torch.mean((mag_hat - mag_ref) ** 2)
+        loss += torch.mean((torch.log1p(mag_hat) - torch.log1p(mag_ref)) ** 2)
+    return loss / 3.0
+
+
 def read_json(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -117,6 +150,7 @@ def main() -> None:
     w_l1 = float(cfg.get("loss_weights", {}).get("distill_l1", 1.0))
     w_mag = float(cfg.get("loss_weights", {}).get("mag_compress", 0.3))
     w_clean = float(cfg.get("loss_weights", {}).get("clean_aux_mag", 0.15))
+    w_mrstft = float(cfg.get("loss_weights", {}).get("mrstft", 0.3))
     residual_alpha = float(cfg.get("train_residual_alpha", 0.8))
     lr = float(cfg.get("learning_rate", 5e-4)) * float(args.lr_scale)
     hard_scene_weights = cfg.get("hard_scene_weights", {"scene02_white_snr5": 3.0, "scene09_chirp_interference_snr8": 3.5})
@@ -171,11 +205,17 @@ def main() -> None:
         pred_mask = torch.nan_to_num(pred_mask, nan=1.0, posinf=1.8, neginf=0.2)
 
         Y_hat = pred_mask * X
+        y_hat_wav = torch.istft(
+            Y_hat, n_fft, hop, window=win, center=True, length=len(rin)
+            )
+        w_mrstft = float(cfg.get("loss_weights", {}).get("mrstft", 0.3))
+
         loss = (
-            w_l1 * l1(pred_mask, teacher_mask)
-            + w_mag * compressed_mag_loss(Y_hat, T, cexp)
-            + w_clean * compressed_mag_loss(Y_hat, C, cexp)
-        )
+                w_l1 * l1(pred_mask, teacher_mask)
+                + w_mag * compressed_mag_loss(Y_hat, T, cexp)
+                + w_clean * compressed_mag_loss(Y_hat, C, cexp)
+                + w_mrstft * multi_resolution_stft_loss(y_hat_wav, teacher, device)
+            )
         if not torch.isfinite(loss):
             continue
         optim.zero_grad()

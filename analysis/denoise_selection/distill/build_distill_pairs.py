@@ -17,7 +17,7 @@ def resolve_cli() -> str:
 
 def scene_files(noisy_dir: Path) -> list[Path]:
     return sorted(
-        [p for p in noisy_dir.glob("scene*.wav") if p.name.lower() != "clean_reference.wav"],
+        [p for p in noisy_dir.glob("[sa]*.wav") if p.name.lower() != "clean_reference.wav"],
         key=lambda p: p.name,
     )
 
@@ -27,8 +27,7 @@ def run_teacher(cli: str, model_dir: Path, in_wav: Path, teacher_out: Path) -> N
         cli,
         str(in_wav),
         "-o",
-        str(teacher_out),
-        "--no-suffix",
+        str(teacher_out.parent),
         "-m",
         str(model_dir),
     ]
