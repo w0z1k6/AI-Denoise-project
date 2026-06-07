@@ -1,0 +1,28 @@
+{
+  "task_id": "e0f3e705e2a7",
+  "filename": "scene09_chirp_interference_snr8.wav",
+  "status": "failed",
+  "progress": 1.0,
+  "message": "failed",
+  "error": "DeepFilterNet command failed: ^C^C",
+  "created_at": "2026-06-05T09:13:13.409045+00:00",
+  "updated_at": "2026-06-05T09:14:38.970043+00:00",
+  "settings": {
+    "task_id": "e0f3e705e2a7",
+    "method": "deepfilter",
+    "run_distill_refine": true,
+    "deepfilter_model_dir": null,
+    "noisereduce_strength": 0.8,
+    "stft_nfft": 512,
+    "stft_hop": 128
+  },
+  "paths": {
+    "original_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\uploads\\e0f3e705e2a7_original.wav",
+    "denoised_wav": null,
+    "residual_wav": null,
+    "metrics_json": null,
+    "plots_json": null
+  },
+  "abx_records": [],
+  "bookmarks": []
+}

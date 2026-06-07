@@ -1,0 +1,32 @@
+{
+  "task_id": "057343f7bfd0",
+  "filename": "scene02_white_snr5.wav",
+  "status": "completed",
+  "progress": 1.0,
+  "message": "completed",
+  "error": null,
+  "created_at": "2026-06-07T15:15:07.597842+00:00",
+  "updated_at": "2026-06-07T15:15:11.786781+00:00",
+  "settings": {
+    "task_id": "057343f7bfd0",
+    "method": "auto",
+    "run_distill_refine": true,
+    "deepfilter_model_dir": null,
+    "noisereduce_strength": 0.8,
+    "stft_nfft": 512,
+    "stft_hop": 128
+  },
+  "paths": {
+    "original_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\uploads\\057343f7bfd0_original.wav",
+    "denoised_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed\\057343f7bfd0_denoised.wav",
+    "residual_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed\\057343f7bfd0_residual.wav",
+    "metrics_json": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\plots\\057343f7bfd0_metrics.json",
+    "plots_json": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\plots\\057343f7bfd0_plots.json"
+  },
+  "abx_records": [],
+  "bookmarks": [],
+  "route": [
+    "base_omlsa_mcra"
+  ],
+  "reason": "default fallback"
+}

@@ -1,0 +1,28 @@
+{
+  "task_id": "7d43b9a43215",
+  "filename": "scene02_white_snr5.wav",
+  "status": "failed",
+  "progress": 1.0,
+  "message": "failed",
+  "error": "DeepFilterNet command failed: error: unexpected argument '--no-suffix' found\n\n  tip: to pass '--no-suffix' as a value, use '-- --no-suffix'\n\nUsage: deepFilter <--model <MODEL>|--pf|--pf-beta <POST_FILTER_BETA>|--compensate-delay|--atten-lim-db <ATTEN_LIM_DB>|--min-db-thresh <MIN_DB_THRESH>|--max-db-erb-thresh <MAX_DB_ERB_THRESH>|--max-db-df-thresh <MAX_DB_DF_THRESH>|--reduce-mask <REDUCE_MASK>|--verbose...|--output-dir <OUTPUT_DIR>|FILES>\n\nFor more information, try '--help'.\nERROR conda.cli.main_run:execute(127): `conda run deepFilter E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\uploads\\7d43b9a43215_original.wav -o E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed --no-suffix -m E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\models\\DeepFilterNet3` failed. (See above for error)",
+  "created_at": "2026-06-07T09:16:45.698627+00:00",
+  "updated_at": "2026-06-07T09:16:50.304560+00:00",
+  "settings": {
+    "task_id": "7d43b9a43215",
+    "method": "deepfilter",
+    "run_distill_refine": false,
+    "deepfilter_model_dir": null,
+    "noisereduce_strength": 0.8,
+    "stft_nfft": 512,
+    "stft_hop": 128
+  },
+  "paths": {
+    "original_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\uploads\\7d43b9a43215_original.wav",
+    "denoised_wav": null,
+    "residual_wav": null,
+    "metrics_json": null,
+    "plots_json": null
+  },
+  "abx_records": [],
+  "bookmarks": []
+}

@@ -1,0 +1,23 @@
+{
+  "sample_rate": 16000,
+  "length_sec": 5.61775,
+  "method": "chirp_notch",
+  "route": [
+    "chirp_notch"
+  ],
+  "reason": "explicit algorithm method",
+  "rms": {
+    "original": 0.03816122189164162,
+    "denoised": 0.031068015843629837,
+    "residual": 0.017188670113682747
+  },
+  "snr_db": {
+    "input_est": 4.124040603637695,
+    "output_est": 3.7371227741241455,
+    "delta": -0.3869178295135498
+  },
+  "residual_stats": {
+    "kurtosis": 6.727505207061768,
+    "skewness": 0.16376444697380066
+  }
+}

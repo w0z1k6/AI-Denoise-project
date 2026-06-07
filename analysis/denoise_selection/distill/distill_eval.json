@@ -2,113 +2,178 @@
   "summary": {
     "scene_count": 15,
     "better_than_routed_count": 15,
-    "mean_improve_vs_routed_rms": 0.0006185003600543098
+    "mean_improve_vs_routed_rms": 0.001386083538333575,
+    "checkpoint_tag": "runK",
+    "mean_noisy_snr_db": 9.066422812143962,
+    "mean_routed_snr_db": 12.692481295267742,
+    "mean_distill_refined_snr_db": 14.055724906921387,
+    "mean_teacher_snr_db": 16.07184575398763
   },
   "scenes": {
     "scene01_white_snr15": {
-      "routed_err_rms": 0.006229077169846278,
-      "distill_refined_err_rms": 0.005865677370615831,
-      "teacher_err_rms": 0.00440578946422426,
-      "improve_vs_routed_rms": 0.00036339979923044694,
-      "gap_to_teacher_rms": 0.0014598879063915712
+      "routed_err_rms": 0.006229077465832233,
+      "distill_refined_err_rms": 0.005372007377445698,
+      "teacher_err_rms": 0.004405789542943239,
+      "improve_vs_routed_rms": 0.0008570700883865356,
+      "gap_to_teacher_rms": 0.0009662178345024586,
+      "noisy_snr_db": 14.999709129333496,
+      "routed_snr_db": 15.114416122436523,
+      "distill_refined_snr_db": 16.400157928466797,
+      "teacher_snr_db": 18.12241554260254
     },
     "scene02_white_snr5": {
-      "routed_err_rms": 0.010026719378768163,
-      "distill_refined_err_rms": 0.00935652749561513,
-      "teacher_err_rms": 0.007655169406256623,
-      "improve_vs_routed_rms": 0.0006701918831530321,
-      "gap_to_teacher_rms": 0.0017013580893585076
+      "routed_err_rms": 0.010026720352470875,
+      "distill_refined_err_rms": 0.009006481617689133,
+      "teacher_err_rms": 0.007655168883502483,
+      "improve_vs_routed_rms": 0.001020238734781742,
+      "gap_to_teacher_rms": 0.0013513127341866493,
+      "noisy_snr_db": 4.999760150909424,
+      "routed_snr_db": 10.979711532592773,
+      "distill_refined_snr_db": 11.911787033081055,
+      "teacher_snr_db": 13.3237943649292
     },
     "scene03_pink_snr10": {
-      "routed_err_rms": 0.008077418173869585,
-      "distill_refined_err_rms": 0.007550655141274895,
-      "teacher_err_rms": 0.005288751296633242,
-      "improve_vs_routed_rms": 0.0005267630325946895,
-      "gap_to_teacher_rms": 0.0022619038446416535
+      "routed_err_rms": 0.008077418431639671,
+      "distill_refined_err_rms": 0.006981465965509415,
+      "teacher_err_rms": 0.00528875133022666,
+      "improve_vs_routed_rms": 0.0010959524661302567,
+      "gap_to_teacher_rms": 0.001692714635282755,
+      "noisy_snr_db": 9.999845504760742,
+      "routed_snr_db": 12.857438087463379,
+      "distill_refined_snr_db": 14.123958587646484,
+      "teacher_snr_db": 16.53582763671875
     },
     "scene04_brown_snr8": {
-      "routed_err_rms": 0.0055480576172911,
-      "distill_refined_err_rms": 0.005268063008159152,
-      "teacher_err_rms": 0.0107550845487167,
-      "improve_vs_routed_rms": 0.00027999460913194756,
-      "gap_to_teacher_rms": -0.005487021540557548
+      "routed_err_rms": 0.0055480580776929855,
+      "distill_refined_err_rms": 0.004854158032685518,
+      "teacher_err_rms": 0.01075508538633585,
+      "improve_vs_routed_rms": 0.0006939000450074673,
+      "gap_to_teacher_rms": -0.0059009273536503315,
+      "noisy_snr_db": 7.999892711639404,
+      "routed_snr_db": 16.12006950378418,
+      "distill_refined_snr_db": 17.28061294555664,
+      "teacher_snr_db": 10.370612144470215
     },
     "scene05_hum50_snr12": {
-      "routed_err_rms": 0.005380109944657639,
-      "distill_refined_err_rms": 0.004760053159478757,
-      "teacher_err_rms": 0.0034016719466924807,
-      "improve_vs_routed_rms": 0.0006200567851788819,
-      "gap_to_teacher_rms": 0.001358381212786276
+      "routed_err_rms": 0.0053801098838448524,
+      "distill_refined_err_rms": 0.004706156440079212,
+      "teacher_err_rms": 0.003401672001928091,
+      "improve_vs_routed_rms": 0.0006739534437656403,
+      "gap_to_teacher_rms": 0.0013044844381511211,
+      "noisy_snr_db": 11.999748229980469,
+      "routed_snr_db": 16.387065887451172,
+      "distill_refined_snr_db": 17.549562454223633,
+      "teacher_snr_db": 20.369041442871094
     },
     "scene06_hum60_snr12": {
-      "routed_err_rms": 0.005543703231427422,
-      "distill_refined_err_rms": 0.00511728105102283,
-      "teacher_err_rms": 0.0034650824318286006,
-      "improve_vs_routed_rms": 0.0004264221804045924,
-      "gap_to_teacher_rms": 0.001652198619194229
+      "routed_err_rms": 0.0055437032133340836,
+      "distill_refined_err_rms": 0.00494384765625,
+      "teacher_err_rms": 0.003465082496404648,
+      "improve_vs_routed_rms": 0.0005998555570840836,
+      "gap_to_teacher_rms": 0.0014787651598453522,
+      "noisy_snr_db": 11.999700546264648,
+      "routed_snr_db": 16.126890182495117,
+      "distill_refined_snr_db": 17.12158966064453,
+      "teacher_snr_db": 20.2086181640625
     },
     "scene07_highfreq_hiss_snr10": {
-      "routed_err_rms": 0.0065455017670358155,
-      "distill_refined_err_rms": 0.006168116372479633,
-      "teacher_err_rms": 0.004064409241050096,
-      "improve_vs_routed_rms": 0.0003773853945561829,
-      "gap_to_teacher_rms": 0.0021037071314295363
+      "routed_err_rms": 0.006545501761138439,
+      "distill_refined_err_rms": 0.005620085634291172,
+      "teacher_err_rms": 0.004064409993588924,
+      "improve_vs_routed_rms": 0.0009254161268472672,
+      "gap_to_teacher_rms": 0.0015556756407022476,
+      "noisy_snr_db": 9.99972915649414,
+      "routed_snr_db": 14.684030532836914,
+      "distill_refined_snr_db": 16.008031845092773,
+      "teacher_snr_db": 18.822938919067383
     },
     "scene08_lowfreq_rumble_snr10": {
-      "routed_err_rms": 0.0067339105623112185,
-      "distill_refined_err_rms": 0.006314338439754183,
-      "teacher_err_rms": 0.004347696625157236,
-      "improve_vs_routed_rms": 0.0004195721225570357,
-      "gap_to_teacher_rms": 0.001966641814596947
+      "routed_err_rms": 0.0067339101806283,
+      "distill_refined_err_rms": 0.005747525487095118,
+      "teacher_err_rms": 0.0043476964347064495,
+      "improve_vs_routed_rms": 0.0009863846935331821,
+      "gap_to_teacher_rms": 0.001399829052388668,
+      "noisy_snr_db": 9.999740600585938,
+      "routed_snr_db": 14.437542915344238,
+      "distill_refined_snr_db": 15.813272476196289,
+      "teacher_snr_db": 18.23770523071289
     },
     "scene09_chirp_interference_snr8": {
-      "routed_err_rms": 0.016856910282946346,
-      "distill_refined_err_rms": 0.014951237698432578,
-      "teacher_err_rms": 0.0044661841108122715,
-      "improve_vs_routed_rms": 0.0019056725845137679,
-      "gap_to_teacher_rms": 0.010485053587620308
+      "routed_err_rms": 0.016856910660862923,
+      "distill_refined_err_rms": 0.012493341229856014,
+      "teacher_err_rms": 0.004466183949261904,
+      "improve_vs_routed_rms": 0.004363569431006908,
+      "gap_to_teacher_rms": 0.00802715728059411,
+      "noisy_snr_db": 7.999756336212158,
+      "routed_snr_db": 6.467329978942871,
+      "distill_refined_snr_db": 9.069317817687988,
+      "teacher_snr_db": 18.00415802001953
     },
     "scene10_impulsive_clicks_snr9": {
-      "routed_err_rms": 0.00844591253315774,
-      "distill_refined_err_rms": 0.008019827931073104,
-      "teacher_err_rms": 0.00626487502991263,
-      "improve_vs_routed_rms": 0.0004260846020846358,
-      "gap_to_teacher_rms": 0.001754952901160474
+      "routed_err_rms": 0.008445912040770054,
+      "distill_refined_err_rms": 0.007537628524005413,
+      "teacher_err_rms": 0.006264874711632729,
+      "improve_vs_routed_rms": 0.0009082835167646408,
+      "gap_to_teacher_rms": 0.0012727538123726845,
+      "noisy_snr_db": 8.999724388122559,
+      "routed_snr_db": 12.469959259033203,
+      "distill_refined_snr_db": 13.458195686340332,
+      "teacher_snr_db": 15.064641952514648
     },
     "scene11_intermittent_bursts_snr7": {
-      "routed_err_rms": 0.014117208696733058,
-      "distill_refined_err_rms": 0.013730866528467844,
-      "teacher_err_rms": 0.006547558731266019,
-      "improve_vs_routed_rms": 0.00038634216826521385,
-      "gap_to_teacher_rms": 0.007183307797201824
+      "routed_err_rms": 0.014117208309471607,
+      "distill_refined_err_rms": 0.008422300219535828,
+      "teacher_err_rms": 0.0065475585870444775,
+      "improve_vs_routed_rms": 0.00569490808993578,
+      "gap_to_teacher_rms": 0.0018747416324913502,
+      "noisy_snr_db": 6.999720573425293,
+      "routed_snr_db": 8.007913589477539,
+      "distill_refined_snr_db": 12.49427604675293,
+      "teacher_snr_db": 14.681302070617676
     },
     "scene12_babble_like_snr5": {
-      "routed_err_rms": 0.013790183941074261,
-      "distill_refined_err_rms": 0.012364309544562475,
-      "teacher_err_rms": 0.010797686133853353,
-      "improve_vs_routed_rms": 0.0014258743965117858,
-      "gap_to_teacher_rms": 0.0015666234107091226
+      "routed_err_rms": 0.013790183700621128,
+      "distill_refined_err_rms": 0.012837640009820461,
+      "teacher_err_rms": 0.010797686874866486,
+      "improve_vs_routed_rms": 0.0009525436908006668,
+      "gap_to_teacher_rms": 0.0020399531349539757,
+      "noisy_snr_db": 4.999754428863525,
+      "routed_snr_db": 8.211488723754883,
+      "distill_refined_snr_db": 8.833186149597168,
+      "teacher_snr_db": 10.336275100708008
     },
     "scene13_street_combo_snr6": {
-      "routed_err_rms": 0.009323598946731829,
-      "distill_refined_err_rms": 0.008682979667735699,
-      "teacher_err_rms": 0.007265963511966978,
-      "improve_vs_routed_rms": 0.0006406192789961303,
-      "gap_to_teacher_rms": 0.001417016155768721
+      "routed_err_rms": 0.009323599748313427,
+      "distill_refined_err_rms": 0.0083127710968256,
+      "teacher_err_rms": 0.007265963591635227,
+      "improve_vs_routed_rms": 0.0010108286514878273,
+      "gap_to_teacher_rms": 0.0010468075051903725,
+      "noisy_snr_db": 5.999758243560791,
+      "routed_snr_db": 11.611217498779297,
+      "distill_refined_snr_db": 12.6079740524292,
+      "teacher_snr_db": 13.777026176452637
     },
     "scene14_office_fan_snr9": {
-      "routed_err_rms": 0.00784798018786775,
-      "distill_refined_err_rms": 0.007366961757996715,
-      "teacher_err_rms": 0.00577876818271651,
-      "improve_vs_routed_rms": 0.0004810184298710352,
-      "gap_to_teacher_rms": 0.0015881935752802044
+      "routed_err_rms": 0.007847979664802551,
+      "distill_refined_err_rms": 0.007646709214895964,
+      "teacher_err_rms": 0.005778767634183168,
+      "improve_vs_routed_rms": 0.0002012704499065876,
+      "gap_to_teacher_rms": 0.0018679415807127953,
+      "noisy_snr_db": 8.99974250793457,
+      "routed_snr_db": 13.107732772827148,
+      "distill_refined_snr_db": 13.33339786529541,
+      "teacher_snr_db": 15.766185760498047
     },
     "scene15_reverb_plus_hiss_snr10": {
-      "routed_err_rms": 0.007243090391298191,
-      "distill_refined_err_rms": 0.00691498225753292,
-      "teacher_err_rms": 0.004756497581222862,
-      "improve_vs_routed_rms": 0.00032810813376527026,
-      "gap_to_teacher_rms": 0.0021584846763100587
+      "routed_err_rms": 0.007243089843541384,
+      "distill_refined_err_rms": 0.006436011753976345,
+      "teacher_err_rms": 0.00475649768486619,
+      "improve_vs_routed_rms": 0.0008070780895650387,
+      "gap_to_teacher_rms": 0.001679514069110155,
+      "noisy_snr_db": 9.999759674072266,
+      "routed_snr_db": 13.804412841796875,
+      "distill_refined_snr_db": 14.83055305480957,
+      "teacher_snr_db": 17.457143783569336
     }
   }
 }

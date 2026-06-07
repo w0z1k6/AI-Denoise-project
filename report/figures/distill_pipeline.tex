@@ -44,7 +44,7 @@
 \node[offline, below=1.0cm of noisy] (teacher) {DeepFilterNet3\\ (offline teacher)};
 \node[block, below=1.0cm of routed] (pairs) {Distill pairs\\ \texttt{distill\_pairs.json}};
 
-\node[block, below=1.0cm of pairs] (train) {Train student\\ \texttt{student\_runD.pt}};
+\node[block, below=1.0cm of pairs] (train) {Train student\\ \texttt{student\_runK.pt}};
 \node[block, right=of train] (infer) {Refine mask\\ $M \odot D_{\mathrm{math}}$};
 \node[block, right=of infer] (out) {Output $\hat{s}$};
 

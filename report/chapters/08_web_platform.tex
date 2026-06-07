@@ -158,7 +158,8 @@ Table~\ref{tab:api_endpoints} lists all public endpoints. OpenAPI documentation 
     \State \texttt{status} $\gets$ \texttt{processing}, \texttt{progress} $\gets 0.1$
     \State $(\hat{x}, r, \mathit{meta}) \gets \textsc{RunDenoise}(\mathit{input}, req.\mathit{method})$
     \If{$req.\mathit{run\_distill\_refine}$}
-      \State $\hat{x} \gets \textsc{RefineWithStudent}(\hat{x}, \mathit{input}, \texttt{student\_runD.pt})$
+      \State $(ckpt, \alpha) \gets \textsc{ResolveDistillCheckpoint}()$ \Comment{\texttt{distill\_config.json}}
+      \State $\hat{x} \gets \textsc{RefineWithStudent}(\hat{x}, \mathit{input}, ckpt, \alpha)$
       \State $r \gets \mathit{input} - \hat{x}$
     \EndIf
     \State Save $\hat{x}$, $r$ as WAV; \texttt{progress} $\gets 0.55$
@@ -300,7 +301,7 @@ Table~\ref{tab:web_methods} maps \texttt{ProcessRequest.method} values to implem
     \texttt{noisereduce} & \texttt{noisereduce} Python library & External baseline \\
     \texttt{wiener} & SciPy \texttt{wiener} ($15$-tap) & Classical baseline \\
     \texttt{deepfilter} & DeepFilterNet CLI; fallback OM-LSA & Teacher / heavy DL \\
-    \texttt{auto} + \texttt{run\_distill\_refine} & Routed output + \texttt{student\_runD.pt} & Hybrid (\chapref{ch:dl}) \\
+    \texttt{auto} + \texttt{run\_distill\_refine} & Routed output + \texttt{student\_runK.pt} (checkbox in UI) & Hybrid (\chapref{ch:dl}) \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -309,11 +310,16 @@ Table~\ref{tab:web_methods} maps \texttt{ProcessRequest.method} values to implem
 For systematic studies on the benchmark set:
 \begin{enumerate}
   \item Run \texttt{auto} without distillation (routed math baseline);
-  \item Run \texttt{auto} with \texttt{run\_distill\_refine=true} (hybrid);
+  \item Run \texttt{auto} with \texttt{run\_distill\_refine=true} (runK hybrid; recommended default for deployment);
   \item Run \texttt{deepfilter} or offline teacher WAVs (upper-bound reference);
   \item Optionally force single modules (\texttt{kalman\_ar}, \texttt{chirp\_notch}, etc.) for ablation.
 \end{enumerate}
 Fixed-parameter spectral subtraction metrics from scene analysis reports (\chapref{ch:scene}) serve as offline classical baselines but are not exposed as a separate web mode.
+
+\subsection{DeepFilterNet3 CLI Deployment}
+\label{sec:deepfilter_deploy}
+
+The \texttt{deepfilter} mode invokes DeepFilterNet3 via subprocess (\texttt{deepfilter\_backend.py}). On Windows, a Rust \texttt{deepFilter.exe} in the repository root can shadow the Python \texttt{deepFilter} from conda env \texttt{dfnet311}; the backend therefore resolves the dfnet311 executable by full path. Set \texttt{DEEPFILTER\_CONDA\_ENV=dfnet311} (default in \texttt{.env.example}) or \texttt{DEEPFILTER\_CLI} to an explicit Python CLI path. Teacher generation and \texttt{deepfilter} mode require \texttt{models/DeepFilterNet3/checkpoints/}.
 
 \section{Error Handling and Security Notes}
 \label{sec:web_errors}
@@ -381,9 +387,9 @@ The web platform mirrors these command-line workflows:
     Auto routing          & \texttt{python run\_pipeline.py --all} \\
     Force single method   & \texttt{run\_pipeline.py --force-method <key>} \\
     Build distill pairs   & \texttt{python distill/build\_distill\_pairs.py} \\
-    Train student         & \texttt{python distill/train\_student\_distill.py --tag runD} \\
-    Infer distill refine  & \texttt{python distill/infer\_student\_refine.py --checkpoint ...} \\
-    AB RMS evaluation     & \texttt{python distill/eval\_distill\_ab.py} \\
+    Train student         & \texttt{python distill/train\_student\_distill.py --tag runK} \\
+    Infer distill refine  & \texttt{python distill/infer\_student\_refine.py --checkpoint distill/checkpoints/student\_runK.pt} \\
+    AB RMS evaluation     & \texttt{python distill/eval\_runK.py} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -401,8 +407,8 @@ Backend tests cover API contracts; frontend Vitest covers \texttt{ABXTestPanel} 
 
 \begin{itemize}
   \item \textbf{ffmpeg} --- MP3/FLAC conversion when \texttt{soundfile} decode fails;
-  \item \textbf{deepFilter} CLI + \texttt{models/DeepFilterNet3/} --- \texttt{deepfilter} mode and teacher generation;
-  \item \textbf{student\_runD.pt} --- required for \texttt{run\_distill\_refine}; silently skipped if missing.
+  \item \textbf{deepFilter} CLI (dfnet311 Python) + \texttt{models/DeepFilterNet3/} --- \texttt{deepfilter} mode and teacher generation;
+  \item \textbf{student\_runK.pt} --- required for \texttt{run\_distill\_refine}; silently skipped if missing.
 \end{itemize}
 
 \section{Chapter Summary}

@@ -22,7 +22,7 @@
   },
   "train_split_ratio": 0.8,
   "seed": 42,
-  "selected_tag": "runD",
-  "selected_checkpoint": "analysis/denoise_selection/distill/checkpoints/student_runD.pt",
+  "selected_tag": "runK",
+  "selected_checkpoint": "analysis/denoise_selection/distill/checkpoints/student_runK.pt",
   "inference_residual_scale": 1.0
 }

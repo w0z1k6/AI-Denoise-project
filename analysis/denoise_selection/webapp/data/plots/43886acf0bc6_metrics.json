@@ -1,0 +1,23 @@
+{
+  "sample_rate": 16000,
+  "length_sec": 5.61775,
+  "method": "deepfilter",
+  "route": [
+    "deepfilter"
+  ],
+  "reason": "DeepFilterNet3 via deepfilter_conda:dfnet311 (DeepFilterNet3)",
+  "rms": {
+    "original": 0.03718511387705803,
+    "denoised": 0.03462379425764084,
+    "residual": 0.011019609868526459
+  },
+  "snr_db": {
+    "input_est": 4.386575698852539,
+    "output_est": 5.333632469177246,
+    "delta": 0.947056770324707
+  },
+  "residual_stats": {
+    "kurtosis": 3.1026222705841064,
+    "skewness": 0.05623809993267059
+  }
+}

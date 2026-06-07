@@ -50,7 +50,7 @@ Table~\ref{tab:api_appendix} duplicates the endpoint catalog for quick reference
     \midrule
     \texttt{task\_id} & string (required) & From \texttt{POST /api/upload} \\
     \texttt{method} & string, \texttt{auto} & See Table~\ref{tab:method_values} \\
-    \texttt{run\_distill\_refine} & bool, \texttt{false} & Apply \texttt{student\_runD.pt} after routing \\
+    \texttt{run\_distill\_refine} & bool, \texttt{false} & Apply \texttt{student\_runK.pt} after routing (UI: Run distill refine) \\
     \texttt{deepfilter\_model\_dir} & string or null & DeepFilterNet3 root for \texttt{deepfilter} mode \\
     \texttt{noisereduce\_strength} & float, \texttt{0.8} & Library strength in $[0.1,1.0]$ \\
     \texttt{stft\_nfft} & int, \texttt{512} & Reserved (runner uses library defaults) \\
@@ -101,10 +101,10 @@ python analysis/denoise_selection/eval/search_best_method_per_scene.py
 
 # Distillation: build pairs, train, infer, evaluate
 python analysis/denoise_selection/distill/build_distill_pairs.py
-python analysis/denoise_selection/distill/train_student_distill.py --tag runD
+python analysis/denoise_selection/distill/train_student_distill.py --tag runK
 python analysis/denoise_selection/distill/infer_student_refine.py \
-  --checkpoint analysis/denoise_selection/distill/checkpoints/student_runD.pt
-python analysis/denoise_selection/distill/eval_distill_ab.py
+  --checkpoint analysis/denoise_selection/distill/checkpoints/student_runK.pt
+python analysis/denoise_selection/distill/eval_runK.py
 
 # Regenerate report experiment figures
 python report/scripts/gen_experiment_figures.py
@@ -249,24 +249,25 @@ Scene analysis aggregates suggested fixed-subtraction ranges (\texttt{anass\_ini
 
 \begin{table}[H]
   \centering
-  \caption{\texttt{distill\_config.json} training defaults (\texttt{runD} checkpoint).}
+  \caption{\texttt{distill\_config.json} training defaults (\texttt{runK} checkpoint).}
   \label{tab:hp_distill}
   \footnotesize
   \begin{tabular}{ll}
     \toprule
     \textbf{Key} & \textbf{Value} \\
     \midrule
-    \texttt{max\_steps} / \texttt{max\_train\_seconds} & 1200 / 900 \\
+    \texttt{max\_steps} / \texttt{max\_train\_seconds} & 50\,000 / 1200 \\
     \texttt{learning\_rate} & $5\times 10^{-4}$ \\
     \texttt{chunk\_seconds} & 1.0\,s (16\,000 samples) \\
     \texttt{train\_residual\_alpha} & 0.8 (training mask) \\
     Inference \texttt{residual\_scale} & 1.0 \\
     \texttt{compress\_exponent} & 0.5 \\
-    Loss weights (\texttt{distill\_l1}, \texttt{mag\_compress}, \texttt{clean\_aux\_mag}) & 1.0, 0.3, 0.15 \\
+    Loss weights (L1, mag, clean, MRSTFT) & 1.0, 0.3, 0.15, 0.5 \\
     Teacher mask clip & $[0.2,\, 1.8]$ \\
     Hard-scene weights (S02, S09, S11) & 3.0, 3.5, 1.5 \\
-    Architecture & Conv2D $2\!\to\!16\!\to\!16\!\to\!1$, $3\times 3$ kernels \\
-    Parameters & 2641 (\texttt{student\_runD.pt}) \\
+    Architecture & conv1 + 3 dilated residual blocks \\
+    Parameters & 56\,129 (\texttt{student\_runK.pt}, $\approx$225\,KB) \\
+    \texttt{selected\_tag} & \texttt{runK} \\
     \texttt{seed} & 42 \\
     \bottomrule
   \end{tabular}

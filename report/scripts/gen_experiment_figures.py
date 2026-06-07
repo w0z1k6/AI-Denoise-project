@@ -34,7 +34,9 @@ def save_quad(scene_key: str, title: str) -> None:
     noisy, _ = load_mono(ROOT / "noisy_testset" / scene_key)
     stem = scene_key.replace(".wav", "")
     routed_p = ROOT / "analysis/denoise_selection/outputs/routed" / f"{stem}_routed.wav"
-    refined_p = ROOT / "analysis/denoise_selection/outputs/distill_refined" / f"{stem}_distill_refined.wav"
+    refined_p = ROOT / "analysis/denoise_selection/outputs/distill_refined_runK" / f"{stem}_distill_refined.wav"
+    if not refined_p.exists():
+        refined_p = ROOT / "analysis/denoise_selection/outputs/distill_refined" / f"{stem}_distill_refined.wav"
 
     n = min(len(clean), len(noisy))
     if routed_p.exists():
@@ -52,7 +54,7 @@ def save_quad(scene_key: str, title: str) -> None:
     panels = [
         ("Noisy mixture", noisy),
         ("Routed (override)", r),
-        ("Distill refined", rf),
+        ("runK distill refined", rf),
         ("Clean reference", clean),
     ]
 
@@ -91,7 +93,7 @@ def main() -> None:
     ax.set_xticks(range(len(imp)))
     ax.set_xticklabels([s.replace("scene", "S").split("_")[0] for s in scenes], fontsize=8)
     ax.set_ylabel("RMS improvement vs routed")
-    ax.set_title("Per-scene distill refinement gain (15 scenes)")
+    ax.set_title("Per-scene runK distill refinement gain (15 scenes)")
     ax.axhline(np.mean(imp), color="crimson", ls="--", label=f"mean={np.mean(imp):.4f}")
     ax.legend()
     fig.tight_layout()
@@ -110,7 +112,7 @@ def main() -> None:
     w = 0.25
     ax.bar(x - w, base, w, label="base OM-LSA")
     ax.bar(x, routed, w, label="routed (override)")
-    ax.bar(x + w, refined, w, label="+ distill refine")
+    ax.bar(x + w, refined, w, label="+ runK distill refine")
     ax.set_xticks(x)
     ax.set_xticklabels([s.replace("scene", "S").split("_")[0] for s in scenes], fontsize=8)
     ax.set_ylabel("RMS error vs clean")

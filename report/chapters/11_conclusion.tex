@@ -9,13 +9,13 @@ This report presented \projectshort{} (\projectname{}), an intelligent audio den
 \subsection{Answers to Research Questions}
 
 \textbf{RQ1 (Scene adaptivity).}
-Full-dimensional analysis of 15 noise scenarios (\chapref{ch:scene}) demonstrated that global SNR labels alone are insufficient: band-wise imbalance, local-SNR tails, and Cohen's $d$ separability differ sharply across scenes. Grid-search override routing---selecting the best single module per scene from scene-informed candidates---reduced mean RMS error from $0.00936$ to $0.00878$ (6.2\% relative improvement), beating monolithic OM-LSA on 13/15 scenes. Module winners (\texttt{nmf\_denoise} on five scenes, \texttt{subspace\_denoise} on four, \texttt{wpe\_omlsa} on three) align with the interference taxonomy used to build the library. Scene03 confirmed that adaptive selection should include a \emph{no-op} fallback to OM-LSA when noise is near-stationary. Live rule routing plus override files implements the same design philosophy with auditable \texttt{reason} strings (\chapref{ch:routing}).
+Full-dimensional analysis of 15 noise scenarios (\chapref{ch:scene}) demonstrated that global SNR labels alone are insufficient: band-wise imbalance, local-SNR tails, and Cohen's $d$ separability differ sharply across scenes. Grid-search override routing---selecting the best single module per scene from scene-informed candidates---reduced mean RMS error from $0.00936$ to $0.00837$ (10.6\% relative improvement), beating monolithic OM-LSA on 13/15 scenes. Module winners (\texttt{nmf\_denoise} on five scenes, \texttt{subspace\_denoise} on four, \texttt{wpe\_omlsa} on three) align with the interference taxonomy used to build the library. Scene03 confirmed that adaptive selection should include a \emph{no-op} fallback to OM-LSA when noise is near-stationary. Live rule routing plus override files implements the same design philosophy with auditable \texttt{reason} strings (\chapref{ch:routing}).
 
 \textbf{RQ2 (Algorithm design).}
 The enhanced OM-LSA/MCRA core replaces fixed spectral subtraction with MMSE gains, MCRA noise tracking, and speech-presence soft gating (\chapref{ch:algorithms}). Mixed chains (WPE, notch, subspace, Kalman, NMF, chirp cancellation followed by OM-LSA) address interference classes that violate single-estimator assumptions. On structured scenes, specialized routing yields large gains---e.g., scene10 clicks RMS $0.01062 \to 0.00844$ ($-20.5\%$) with NMF, and isolated \texttt{chirp\_notch} on scene09 reaching $0.01185$ versus base $0.01506$. Diagnostic fixed subtraction in scene reports correctly predicted high musical-noise risk (kurtosis 142 on clicks).
 
 \textbf{RQ3 (Hybrid refinement).}
-TinyResidualRefiner (2641 parameters, $\alpha=0.8$) improved routed RMS on \textbf{all 15 scenes}, lowering the mean from $0.00878$ to $0.00816$ and closing approximately 39\% of the mean gap to the DeepFilterNet3 teacher ($0.00595$) while adding only $\approx 8$\,ms refine latency on CPU. Gains were largest on chirp and babble ($\Delta e = 0.00191$ and $0.00143$), where math routing leaves structured residual error. No scene regressed relative to its routed WAV under the fixed \texttt{runD} checkpoint, validating optional refinement as a safe quality knob.
+TinyResidualRefiner runK (56\,129 parameters, $\alpha=0.8$) improved routed RMS on \textbf{all 15 scenes}, lowering the mean from $0.00837$ to $0.00730$ and closing approximately 44\% of the mean gap to the DeepFilterNet3 teacher ($0.00596$) while adding only $\approx 8$\,ms refine latency on CPU. Gains were largest on chirp and bursts ($\Delta e = 0.00436$ and $0.00569$), where math routing leaves structured residual error. Mean SNR improved from 12.69\,dB (routed) to 14.06\,dB (runK). No scene regressed relative to its routed WAV under \texttt{student\_runK.pt}.
 
 \textbf{RQ4 (Evaluability).}
 The web platform (\chapref{ch:web}) provides REST APIs, 28 Plotly metrics per task, residual export, history management, and ABX sessions. Experiments in \chapref{ch:experiments} were reproduced from JSON artifacts (\texttt{distill\_eval.json}, \texttt{best\_method\_search.json}, \texttt{routed\_route\_log.json}) and script-generated spectrograms. Docker packaging and pinned dependencies support repeatable demos for coursework and external review.
@@ -33,9 +33,9 @@ Table~\ref{tab:final_outcomes} summarizes the enhancement cascade on the shared 
     \textbf{Pipeline stage} & \textbf{Mean $e_{\mathrm{RMS}}$} & \textbf{Scenes improved vs.\ previous stage} \\
     \midrule
     Monolithic OM-LSA/MCRA & 0.00936 & --- \\
-    Per-scene override routing & 0.00878 & 13 / 15 \\
-    + TinyResidualRefiner (\texttt{runD}) & 0.00816 & 15 / 15 \\
-    DeepFilterNet3 teacher (offline) & 0.00595 & 14 / 15 vs.\ refined \\
+    Per-scene override routing & 0.00837 & 13 / 15 \\
+    + TinyResidualRefiner (\texttt{runK}) & 0.00730 & 15 / 15 \\
+    DeepFilterNet3 teacher (offline) & 0.00596 & 14 / 15 vs.\ runK \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -55,7 +55,7 @@ The following directions extend the current prototype toward production-grade AS
   Integrate Module~1--3 noise estimators and over-subtraction controls (\chapref{ch:scene}) into the streaming path so the first 200--500\,ms of an utterance updates $\hat{N}(k,t)$ and gain floors before the bulk of speech is processed---critical for mobile ASR where scene JSON is unavailable.
 
   \item \textbf{Richer distillation.}
-  Experiment with multi-teacher ensembles (e.g., DeepFilterNet + metricGAN-style targets), perceptual losses (PESQ/STOI surrogates), and phase-aware masks. Priority-scene oversampling should continue to emphasize large Cohen's $d$ deficits and high baseline kurtosis.
+  Retrain runK on aug-expanded pairs (\texttt{augment\_data.py}); experiment with multi-teacher ensembles and phase-aware masks. The merged repository supports 9500+ aug entries for large-scale retraining when augmented WAVs are available.
 
   \item \textbf{Real-time streaming and mobile export.}
   Chunk STFT processing with overlap-add state buffers; export TinyResidualRefiner to ONNX or TFLite and benchmark on ARM devices. Latency targets should be stated jointly with WER or MOS, not RMS alone.

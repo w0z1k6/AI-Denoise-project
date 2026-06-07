@@ -1,0 +1,32 @@
+{
+  "task_id": "cb44e243ae03",
+  "filename": "scene02_white_snr5.wav",
+  "status": "completed",
+  "progress": 1.0,
+  "message": "completed",
+  "error": null,
+  "created_at": "2026-06-07T09:22:29.752716+00:00",
+  "updated_at": "2026-06-07T09:22:44.031094+00:00",
+  "settings": {
+    "task_id": "cb44e243ae03",
+    "method": "deepfilter",
+    "run_distill_refine": false,
+    "deepfilter_model_dir": null,
+    "noisereduce_strength": 0.8,
+    "stft_nfft": 512,
+    "stft_hop": 128
+  },
+  "paths": {
+    "original_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\uploads\\cb44e243ae03_original.wav",
+    "denoised_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed\\cb44e243ae03_denoised.wav",
+    "residual_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed\\cb44e243ae03_residual.wav",
+    "metrics_json": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\plots\\cb44e243ae03_metrics.json",
+    "plots_json": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\plots\\cb44e243ae03_plots.json"
+  },
+  "abx_records": [],
+  "bookmarks": [],
+  "route": [
+    "deepfilter"
+  ],
+  "reason": "DeepFilterNet3 via deepfilter_cli:python (DeepFilterNet3)"
+}

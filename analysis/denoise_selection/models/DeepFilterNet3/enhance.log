@@ -134,3 +134,27 @@
 2026-05-31 16:12:05 | INFO     | DF | Running on device cpu
 2026-05-31 16:12:05 | INFO     | DF | Model loaded
 2026-05-31 16:12:09 | INFO     | DF | Enhanced noisy audio file 'scene15_reverb_plus_hiss_snr10.wav' in 0.17s (RT factor: 0.031)
+2026-06-07 17:20:35 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-06-07 17:20:35 | INFO     | DF | Running on host wozik16
+2026-06-07 17:20:35 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-06-07 17:20:35 | INFO     | DF | Initializing model `deepfilternet3`
+2026-06-07 17:20:35 | INFO     | DF | Found checkpoint analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-06-07 17:20:35 | INFO     | DF | Running on device cpu
+2026-06-07 17:20:35 | INFO     | DF | Model loaded
+2026-06-07 17:20:44 | INFO     | DF | Enhanced noisy audio file 'scene01_white_snr15.wav' in 0.16s (RT factor: 0.028)
+2026-06-07 17:21:35 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-06-07 17:21:35 | INFO     | DF | Running on host wozik16
+2026-06-07 17:21:35 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-06-07 17:21:35 | INFO     | DF | Initializing model `deepfilternet3`
+2026-06-07 17:21:35 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-06-07 17:21:35 | INFO     | DF | Running on device cpu
+2026-06-07 17:21:35 | INFO     | DF | Model loaded
+2026-06-07 17:21:39 | INFO     | DF | Enhanced noisy audio file 'scene01_white_snr15.wav' in 0.15s (RT factor: 0.027)
+2026-06-07 17:22:36 | INFO     | DF | Running on torch 2.2.2+cpu
+2026-06-07 17:22:36 | INFO     | DF | Running on host wozik16
+2026-06-07 17:22:36 | INFO     | DF | Loading model settings of DeepFilterNet3
+2026-06-07 17:22:36 | INFO     | DF | Initializing model `deepfilternet3`
+2026-06-07 17:22:36 | INFO     | DF | Found checkpoint E:\SHU sem.8\机器学习\DEMO\analysis\denoise_selection\models\DeepFilterNet3\checkpoints\model_120.ckpt.best with epoch 120
+2026-06-07 17:22:36 | INFO     | DF | Running on device cpu
+2026-06-07 17:22:36 | INFO     | DF | Model loaded
+2026-06-07 17:22:40 | INFO     | DF | Enhanced noisy audio file 'cb44e243ae03_original.wav' in 0.17s (RT factor: 0.030)

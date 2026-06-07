@@ -38,7 +38,7 @@ Chain execution follows Eq.~\eqref{eq:chain_compose}: each stage receives the wa
 
 \subsection{Decision Priority}
 
-Routing applies decisions in strict priority order (Figure~\ref{fig:routing_flow}):
+Routing applies decisions in strict priority order:
 \begin{enumerate}
   \item \textbf{CLI force} --- \texttt{--force-method} (batch) or explicit method in the web UI bypasses all rules;
   \item \textbf{Config override} --- per-scene entry in \texttt{scene\_method\_overrides.json};
@@ -46,14 +46,6 @@ Routing applies decisions in strict priority order (Figure~\ref{fig:routing_flow
   \item \textbf{Default fallback} --- single-stage \texttt{base\_omlsa\_mcra}.
 \end{enumerate}
 
-\begin{figure}[H]
-  \centering
-  \resizebox{0.95\textwidth}{!}{%
-    \input{figures/routing_flow.tex}%
-  }
-  \caption{Adaptive routing decision flow: force method, config override, metric rules, then OM-LSA fallback.}
-  \label{fig:routing_flow}
-\end{figure}
 
 \section{Routing Feature Vector}
 \label{sec:routing_features}

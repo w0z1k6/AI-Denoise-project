@@ -11,7 +11,7 @@ The platform was designed for local audio preprocessing research in an ASR-orien
 \begin{itemize}
   \item \textbf{Interpretability.} Processing stages should remain inspectable: routing decisions log explicit algorithm chains and human-readable reasons; OM-LSA/MCRA gains and noise PSD updates can be traced frame-by-frame; residual waveforms are exported for diagnosis.
   \item \textbf{Adaptivity.} Enhancement should respond to scene characteristics---band-wise SNR imbalance, tonal structure, reverberation, and local SNR variability---via both internal bin-level adaptation and external algorithm routing.
-  \item \textbf{Efficiency.} Deployment should not require large-model inference. Mathematical denoising carries the main computational load; optional refinement uses a TinyResidualRefiner with only thousands of parameters. DeepFilterNet3 is confined to offline teacher generation during distillation training.
+  \item \textbf{Efficiency.} Deployment should not require large-model inference. Mathematical denoising carries the main computational load; optional refinement uses a TinyResidualRefiner runK checkpoint (56\,129 parameters, $\approx$225\,KB). DeepFilterNet3 is confined to offline teacher generation during distillation training.
   \item \textbf{Evaluability.} Every processed utterance should yield reproducible objective metrics (SNR, residual RMS, kurtosis), 24+ diagnostic plots, synchronized A/B audio comparison, and ABX blind listening statistics.
 \end{itemize}
 
@@ -54,7 +54,7 @@ The offline workflow centered on \texttt{run\_pipeline.py} follows six steps:
   \item \textbf{Input.} A mono WAV file from \texttt{noisy\_testset/} (e.g., \texttt{scene01\_white\_snr15.wav}).
   \item \textbf{Routing.} \texttt{router/rule\_router.py} loads \texttt{analysis/scene\_details/\{scene\}\_metrics.json}, checks \texttt{config/scene\_method\_overrides.json}, and returns a \texttt{RouteDecision} (chain + reason).
   \item \textbf{Enhancement.} Each method in the chain is applied sequentially via \texttt{algorithms/*.py}, producing \texttt{*\_routed.wav} in \texttt{outputs/routed/}.
-  \item \textbf{Optional distillation.} \texttt{distill/infer\_student\_refine.py} loads \texttt{student\_runD.pt} and overwrites the routed output with a refined version in \texttt{outputs/distill\_refined/}.
+  \item \textbf{Optional distillation.} \texttt{distill/infer\_student\_refine.py} loads \texttt{student\_runK.pt} and writes refined outputs to \texttt{outputs/distill\_refined\_runK/}.
   \item \textbf{Logging.} Route metadata is written to \texttt{outputs/route\_log.json}.
   \item \textbf{Evaluation.} \texttt{eval/batch\_eval\_metrics.py} and \texttt{eval/search\_best\_method\_per\_scene.py} compute RMS errors and search per-scene best methods.
 \end{enumerate}
@@ -72,7 +72,7 @@ The offline workflow centered on \texttt{run\_pipeline.py} follows six steps:
   \label{fig:web_dataflow}
 \end{figure}
 
-Upon \texttt{POST /api/process}, the backend invokes \texttt{denoise\_runner.run\_denoise()} with the selected method (\texttt{auto}, explicit algorithm name, \texttt{noisereduce}, \texttt{wiener}, or \texttt{deepfilter}). If \texttt{run\_distill\_refine=true}, \texttt{distill\_refiner.refine\_with\_student()} post-processes the denoised WAV. Finally, \texttt{metrics\_service.build\_metrics\_and\_plots()} generates SNR statistics, residual descriptors, and 24+ grouped Plotly figures stored as JSON for the chart center.
+Upon \texttt{POST /api/process}, the backend invokes \texttt{denoise\_runner.run\_denoise()} with the selected method (\texttt{auto}, explicit algorithm name, \texttt{noisereduce}, \texttt{wiener}, or \texttt{deepfilter}). If \texttt{run\_distill\_refine=true}, \texttt{distill\_refiner.refine\_with\_student()} loads \texttt{student\_runK.pt} via \texttt{resolve\_distill\_checkpoint()} and post-processes the denoised WAV. Users select \textbf{auto} plus checkbox \textbf{Run distill refine} in the upload UI (\chapref{ch:web}). Finally, \texttt{metrics\_service.build\_metrics\_and\_plots()} generates SNR statistics, residual descriptors, and 24+ grouped Plotly figures stored as JSON for the chart center.
 
 \subsection{Artifact Types}
 

@@ -1,0 +1,23 @@
+{
+  "sample_rate": 16000,
+  "length_sec": 5.61775,
+  "method": "auto",
+  "route": [
+    "base_omlsa_mcra"
+  ],
+  "reason": "default fallback",
+  "rms": {
+    "original": 0.03816122189164162,
+    "denoised": 0.03397509455680847,
+    "residual": 0.012043099850416183
+  },
+  "snr_db": {
+    "input_est": 4.124040603637695,
+    "output_est": 5.2364630699157715,
+    "delta": 1.1124224662780762
+  },
+  "residual_stats": {
+    "kurtosis": 2.0353477001190186,
+    "skewness": 0.0717683956027031
+  }
+}

@@ -8,7 +8,7 @@ import soundfile as sf
 from app.core.errors import ApiError
 from app.schemas.models import ProcessRequest, ProcessResponse
 from app.services.denoise_runner import run_denoise, save_audio
-from app.services.distill_refiner import refine_with_student
+from app.services.distill_refiner import PROJECT_ROOT, refine_with_student, resolve_distill_checkpoint
 from app.services.file_store import FILE_STORE
 from app.services.metrics_service import build_metrics_and_plots, save_metrics_and_plots
 from app.services.task_store import TASK_STORE
@@ -36,14 +36,19 @@ def _do_process(req: ProcessRequest) -> None:
         TASK_STORE.patch(req.task_id, {"progress": 0.55, "message": "building metrics and plots"})
 
         if req.run_distill_refine:
-            ckpt = Path("analysis/denoise_selection/distill/checkpoints/student_runD.pt")
-            refine_with_student(
+            ckpt, residual_scale = resolve_distill_checkpoint(PROJECT_ROOT)
+            refined = refine_with_student(
                 input_wav=den_wav,
                 noisy_wav=in_wav,
                 output_wav=den_wav,
-                checkpoint=ckpt.resolve(),
-                residual_scale=1.0,
+                checkpoint=ckpt,
+                residual_scale=residual_scale,
             )
+            if not refined:
+                TASK_STORE.patch(
+                    req.task_id,
+                    {"message": "distill refine skipped: checkpoint missing"},
+                )
             # refresh denoised from refined output
             y, _ = sf.read(den_wav)
             if getattr(y, "ndim", 1) > 1:

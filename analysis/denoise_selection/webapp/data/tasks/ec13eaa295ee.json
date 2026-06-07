@@ -1,0 +1,32 @@
+{
+  "task_id": "ec13eaa295ee",
+  "filename": "scene09_chirp_interference_snr8.wav",
+  "status": "completed",
+  "progress": 1.0,
+  "message": "completed",
+  "error": null,
+  "created_at": "2026-06-06T11:44:06.978246+00:00",
+  "updated_at": "2026-06-06T11:44:10.794138+00:00",
+  "settings": {
+    "task_id": "ec13eaa295ee",
+    "method": "auto",
+    "run_distill_refine": true,
+    "deepfilter_model_dir": null,
+    "noisereduce_strength": 0.8,
+    "stft_nfft": 512,
+    "stft_hop": 128
+  },
+  "paths": {
+    "original_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\uploads\\ec13eaa295ee_original.wav",
+    "denoised_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed\\ec13eaa295ee_denoised.wav",
+    "residual_wav": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\processed\\ec13eaa295ee_residual.wav",
+    "metrics_json": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\plots\\ec13eaa295ee_metrics.json",
+    "plots_json": "E:\\SHU sem.8\\机器学习\\DEMO\\analysis\\denoise_selection\\webapp\\data\\plots\\ec13eaa295ee_plots.json"
+  },
+  "abx_records": [],
+  "bookmarks": [],
+  "route": [
+    "base_omlsa_mcra"
+  ],
+  "reason": "default fallback"
+}

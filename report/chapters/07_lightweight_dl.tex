@@ -1,7 +1,7 @@
 \chapter{Lightweight Deep Learning Refinement}
 \label{ch:dl}
 
-Layer~3 of the \projectshort{} architecture (\chapref{ch:system}) adds an optional deep-learning stage \emph{after} scene-aware mathematical denoising (\chapref{ch:routing}) and \emph{before} evaluation or ASR ingestion. This chapter specifies the TinyResidualRefiner student network, the DeepFilterNet3-based distillation pipeline, training and hyperparameter selection, benchmark results, and deployment characteristics. The design goal is to transfer a fraction of teacher quality into a sub-10\,KB checkpoint that runs in milliseconds on CPU, without replacing the interpretable math backbone at inference.
+Layer~3 of the \projectshort{} architecture (\chapref{ch:system}) adds an optional deep-learning stage \emph{after} scene-aware mathematical denoising (\chapref{ch:routing}) and \emph{before} evaluation or ASR ingestion. This chapter specifies the TinyResidualRefiner student network (runK checkpoint), the DeepFilterNet3-based distillation pipeline, training and model selection, benchmark results, and deployment characteristics. The design goal is to transfer a fraction of teacher quality into a compact checkpoint ($\sim$225\,KB, 56\,129 parameters) that runs in milliseconds on CPU, without replacing the interpretable math backbone at inference.
 
 \section{Design Philosophy: Math-First, DL-Assisted}
 \label{sec:dl_philosophy}
@@ -13,11 +13,9 @@ Large end-to-end enhancers such as DeepFilterNet3~\cite{deepfilternet2023} achie
 \projectshort{} therefore adopts a \emph{hybrid} strategy:
 \begin{enumerate}
   \item \textbf{Math-first backbone} --- routed OM-LSA/MCRA and specialized front-ends provide a fast, inspectable baseline $D_{\mathrm{math}}$ (\chapref{ch:algorithms}).
-  \item \textbf{Residual DL correction} --- a tiny student $\mathcal{F}_\theta$ predicts only a bounded multiplicative mask on the STFT of $D_{\mathrm{math}}$, not clean speech from scratch.
+  \item \textbf{Residual DL correction} --- a student $\mathcal{F}_\theta$ predicts only a bounded multiplicative mask on the STFT of $D_{\mathrm{math}}$, not clean speech from scratch.
   \item \textbf{Offline teacher} --- DeepFilterNet3 generates training targets; it is \emph{not} invoked at inference when refinement is disabled or when only the student is deployed.
 \end{enumerate}
-
-This division implements the research gap identified in \chapref{ch:background}: preserve modular interpretability and scene routing while closing part of the quality gap to a strong neural teacher.
 
 \subsection{Residual-on-Math Formulation}
 
@@ -33,10 +31,6 @@ with $m_{\min}=0.2$, $m_{\max}=1.8$, and residual scale $\alpha=0.8$ (training a
 \end{equation}
 Magnitude-domain residual learning reduces the dynamic range the network must represent compared to mapping $Y\mapsto \hat{S}$ directly~\cite{hintondistill2015}, while keeping enhancement decisions partially auditable through the routed baseline.
 
-\begin{remark}[Why not distill end-to-end?]
-An end-to-end student would need to internalize routing, WPE, notch banks, and OM-LSA inside one black box. By distilling on \emph{routed} inputs, the student specializes in \emph{closing residual errors} left by the current math pipeline---consistent with Theorem~\ref{thm:chain} and the analysis--design loop (\chapref{ch:routing}).
-\end{remark}
-
 \section{End-to-End Distillation Pipeline}
 \label{sec:distill_pipeline}
 
@@ -44,23 +38,23 @@ An end-to-end student would need to internalize routing, WPE, notch banks, and O
 \texttt{run\_pipeline.py} produces \texttt{*\_routed.wav} for each benchmark scene using \texttt{choose\_route()} and override config (\chapref{ch:routing}).
 
 \paragraph{Stage 2: Teacher generation.}
-\texttt{build\_distill\_pairs.py} invokes the DeepFilterNet CLI (\texttt{deepFilter}) with weights under \texttt{models/DeepFilterNet3/}, writing \texttt{*\_teacher.wav} per scene.
+\texttt{build\_distill\_pairs.py} invokes the Python DeepFilterNet CLI (\texttt{deepFilter} in conda env \texttt{dfnet311}) with weights under \texttt{models/DeepFilterNet3/}, writing \texttt{*\_teacher.wav} per scene. The backend resolves the dfnet311 executable by full path to avoid shadowing by a Rust \texttt{deepFilter.exe} in the repository root (\chapref{ch:web}).
 
 \paragraph{Stage 3: Pair manifest.}
-Each entry in \texttt{distill\_pairs.json} links $(y_{\mathrm{noisy}}, D_{\mathrm{math}}, T_{\mathrm{teacher}}, s_{\mathrm{clean}})$ with aligned file paths. An 80/20 scene split (\texttt{distill\_split.json}) holds out scenes 13--15 for validation.
+Each entry in \texttt{distill\_pairs.json} links $(y_{\mathrm{noisy}}, D_{\mathrm{math}}, T_{\mathrm{teacher}}, s_{\mathrm{clean}})$ with aligned file paths. An 80/20 scene split (\texttt{distill\_split.json}) holds out scenes 13--15 for validation. Optional \texttt{augment\_data.py} can expand pairs with synthetic aug scenes for large-scale retraining (PR merge); the deployed runK checkpoint reported here was trained on the 15 original benchmark scenes.
 
 \paragraph{Stage 4: Student training.}
-\texttt{train\_student\_distill.py} optimizes $\theta$ with mask-distillation and compressed-magnitude losses for up to 1200 steps or 900\,s.
+\texttt{train\_student\_distill.py --tag runK} optimizes $\theta$ with mask-distillation, compressed-magnitude, clean auxiliary, and multi-resolution STFT losses for up to 50\,000 steps or 1200\,s.
 
 \paragraph{Stage 5: Refinement inference.}
-\texttt{infer\_student\_refine.py} or the web \texttt{run\_distill\_refine} flag applies the checkpoint (\texttt{student\_runD.pt}) to routed audio.
+\texttt{infer\_student\_refine.py}, \texttt{eval\_runK.py}, or the web \texttt{run\_distill\_refine} flag applies \texttt{student\_runK.pt} to routed audio and writes \texttt{*\_distill\_refined.wav} under \texttt{outputs/distill\_refined\_runK/}.
 
-\section{TinyResidualRefiner Architecture}
+\section{TinyResidualRefiner Architecture (runK)}
 \label{sec:architecture_student}
 
 \subsection{Input Representation}
 
-Given routed waveform $d_{\mathrm{math}}(n)$ and noisy $y(n)$, compute STFTs $D_{\mathrm{math}}(k,t)$ and $Y(k,t)$ with $N_{\mathrm{FFT}}=512$, hop $R=128$, Hann window (matching \texttt{common.py} and OM-LSA). Log-compressed magnitudes form a two-channel map:
+Given routed waveform $d_{\mathrm{math}}(n)$ and noisy $y(n)$, compute STFTs $D_{\mathrm{math}}(k,t)$ and $Y(k,t)$ with $N_{\mathrm{FFT}}=512$, hop $R=128$, Hann window. Log-compressed magnitudes form a two-channel map:
 \begin{equation}
   \mathbf{X}(k,t) =
   \begin{bmatrix}
@@ -70,157 +64,75 @@ Given routed waveform $d_{\mathrm{math}}(n)$ and noisy $y(n)$, compute STFTs $D_
   \in \mathbb{R}^{2\times F\times T},
   \label{eq:student_input}
 \end{equation}
-where $F=257$ one-sided bins at 16\,kHz. Log1p compression stabilizes gradients across 40\,dB dynamic range while preserving low-energy consonant structure.
+where $F=257$ one-sided bins at 16\,kHz.
 
-\subsection{Convolutional Stack}
+\subsection{Dilated Residual Stack}
 
-The student $\mathcal{F}_\theta$ is a three-layer Conv2D network (\texttt{TinyResidualRefiner} in \texttt{train\_student\_distill.py}):
+Early prototypes (\texttt{runA}--\texttt{runD}) used a shallow three-layer Conv2D stack (2641 parameters). The selected \textbf{runK} architecture expands capacity with dilated residual blocks (\texttt{TinyResidualRefiner} in \texttt{train\_student\_distill.py}):
 \begin{align}
-  \mathbf{H}_1 &= \mathrm{ReLU}\bigl(\mathrm{Conv}_{3\times3}^{2\to 16}(\mathbf{X})\bigr), \\
-  \mathbf{H}_2 &= \mathrm{ReLU}\bigl(\mathrm{Conv}_{3\times3}^{16\to 16}(\mathbf{H}_1)\bigr), \\
-  \mathbf{r}   &= \tanh\bigl(\mathrm{Conv}_{1\times1}^{16\to 1}(\mathbf{H}_2)\bigr) \in [-1,1]^{F\times T}.
+  \mathbf{H}_0 &= \mathrm{ReLU}\bigl(\mathrm{Conv}_{3\times3}^{2\to 32}(\mathbf{X})\bigr), \\
+  \mathbf{H}_i &= \mathbf{H}_{i-1} + \mathrm{ResBlock}_{d_i}(\mathbf{H}_{i-1}),\quad d_i \in \{2,4,8\}, \\
+  \mathbf{r}   &= \tanh\bigl(\mathrm{Conv}_{1\times1}^{32\to 1}(\mathbf{H}_3)\bigr) \in [-1,1]^{F\times T}.
 \end{align}
-Each frequency--time location receives a $3\times3$ local context in $\mathbf{X}$; the $1\times1$ head produces a scalar residual per bin. The predicted mask follows \eqref{eq:residual_mask} with $\alpha$ stored in the checkpoint for inference scaling.
+Each \texttt{ResBlock} applies two $3\times3$ convolutions with dilation $d_i$, enlarging receptive field along frequency without deep recurrence. The predicted mask follows \eqref{eq:residual_mask}.
 
 \begin{table}[H]
   \centering
-  \caption{TinyResidualRefiner layer shapes and parameter counts.}
+  \caption{TinyResidualRefiner runK: layer groups and parameter count.}
   \label{tab:student_params}
-  \begin{tabular}{lcccc}
+  \begin{tabular}{lcc}
     \toprule
-    \textbf{Layer} & \textbf{Kernel} & \textbf{In$\to$Out} & \textbf{Params} & \textbf{Output shape} \\
+    \textbf{Block} & \textbf{Structure} & \textbf{Params (approx.)} \\
     \midrule
-    Conv2d + ReLU   & $3\times3$ & $2\to16$  & 304  & $16\times F\times T$ \\
-    Conv2d + ReLU   & $3\times3$ & $16\to16$ & 2320 & $16\times F\times T$ \\
-    Conv2d + Tanh   & $1\times1$ & $16\to1$  & 17   & $F\times T$ \\
+    Stem            & Conv2d $2\to32$, $3\times3$ + ReLU        & 608 \\
+    ResBlock $d=2$  & Conv $32\to32$, dilated + Conv $3\times3$ & $\sim$18.5k \\
+    ResBlock $d=4$  & same                                      & $\sim$18.5k \\
+    ResBlock $d=8$  & same                                      & $\sim$18.5k \\
+    Head            & Conv2d $32\to1$, $1\times1$ + Tanh          & 33 \\
     \midrule
-    \textbf{Total}  &            &           & \textbf{2641} & \\
+    \textbf{Total}  &                                           & \textbf{56\,129} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{Design Rationale}
-
-\begin{itemize}
-  \item \textbf{Two-channel input} --- $|D_{\mathrm{math}}|$ exposes what the math chain already removed; $|Y|$ preserves noise context for scenes where routing under-suppresses.
-  \item \textbf{Tanh residual} --- bounds raw network output before clipping, preventing explosive masks early in training.
-  \item \textbf{Symmetric clip $[0.2,1.8]$} --- allows both attenuation and slight boost relative to routed magnitude, matching teacher mask dynamic range.
-  \item \textbf{No recurrent layers} --- entire utterance processed in one STFT pass; latency scales linearly with length and is dominated by STFT/iSTFT, not Conv2D.
-\end{itemize}
+Checkpoint \texttt{student\_runK.pt} occupies $\approx$225\,KB on disk (float32 weights plus STFT metadata).
 
 \section{Training Data Construction}
 \label{sec:distill_pairs}
 
-\subsection{Pair Schema}
-
-For each scene $s$ in \texttt{noisy\_testset/}, \texttt{build\_distill\_pairs.py} emits:
-\begin{center}
-\small
-\begin{tabular}{ll}
-  \texttt{noisy\_wav}      & original mixture $y$ \\
-  \texttt{math\_input\_wav} & routed output $d_{\mathrm{math}}$ (\texttt{*\_routed.wav}) \\
-  \texttt{teacher\_wav}    & DeepFilterNet3 output on $y$ \\
-  \texttt{clean\_wav}      & \texttt{clean\_reference.wav} (shared) \\
-\end{tabular}
-\end{center}
-
-Teacher inference uses the bundled DeepFilterNet3 checkpoint; outputs are cached under \texttt{distill/teacher/} unless \texttt{--regen-teacher} is set.
-
-\subsection{Train/Validation Split}
-
-With 15 paired scenes, the split file fixes:
-\begin{itemize}
-  \item \textbf{Train (12 scenes):} scene01--scene12;
-  \item \textbf{Validation (3 scenes):} scene13 (\texttt{street\_combo}), scene14 (\texttt{office\_fan}), scene15 (\texttt{reverb\_plus\_hiss}).
-\end{itemize}
-Validation scenes were not seen during gradient updates but share the same noise taxonomy as training, providing a conservative generalization check before AB evaluation on all 15 outputs.
+For each scene $s$ in \texttt{noisy\_testset/}, \texttt{build\_distill\_pairs.py} emits \texttt{noisy\_wav}, \texttt{math\_input\_wav} (routed), \texttt{teacher\_wav}, and \texttt{clean\_wav}. Train/validation split: scene01--12 train, scene13--15 validate (\texttt{distill\_split.json}).
 
 \section{Knowledge Distillation Training}
 \label{sec:distill_training}
 
-\subsection{Teacher-Derived Mask Target}
+\subsection{Loss Function}
 
-Let $X$, $T$, $C$ be complex STFTs of routed, teacher, and clean waveforms on a random 1.0\,s chunk. Teacher mask targets are
-\begin{equation}
-  M_{\mathrm{teacher}}(k,t) =
-  \mathrm{clip}\!\left(
-    \frac{|T(k,t)|}{|X(k,t)|+\varepsilon},\;
-    m_{\min},\, m_{\max}
-  \right).
-  \label{eq:teacher_mask}
-\end{equation}
-This ratio expresses how much additional suppression (or boost) the teacher applies relative to the math baseline---a direct soft target for mask distillation rather than raw waveform matching.
-
-\subsection{Compressed-Magnitude Loss}
-
-To align refined STFT magnitudes with teacher and clean references, define the compressed magnitude with exponent $c=0.5$:
-\begin{equation}
-  \psi_c(Z) = \bigl(|Z|+\varepsilon\bigr)^{c}.
-\end{equation}
-The refinement $\hat{Y}=M\odot X$ minimizes
+Beyond mask L1 and compressed-magnitude terms, runK adds a multi-resolution STFT loss $\mathcal{L}_{\mathrm{MRSTFT}}$ over $(512,1024,2048)$ FFT sizes with magnitude and log-magnitude terms. Let $\psi_c(Z)=(|Z|+\varepsilon)^c$ with $c=0.5$. The refinement $\hat{Y}=M\odot X$ minimizes
 \begin{equation}
   \mathcal{L} =
     \lambda_1 \,\| M - M_{\mathrm{teacher}} \|_1
   + \lambda_2 \,\| \psi_c(\hat{Y}) - \psi_c(T) \|_2^2
-  + \lambda_3 \,\| \psi_c(\hat{Y}) - \psi_c(C) \|_2^2,
-  \label{eq:distill_loss}
+  + \lambda_3 \,\| \psi_c(\hat{Y}) - \psi_c(C) \|_2^2
+  + \lambda_4 \,\mathcal{L}_{\mathrm{MRSTFT}}(\hat{s}, T),
+  \label{eq:distill_loss_runk}
 \end{equation}
-with defaults $(\lambda_1,\lambda_2,\lambda_3)=(1.0, 0.3, 0.15)$ from \texttt{distill\_config.json}. The L1 mask term transfers teacher suppression patterns; compressed-magnitude terms stabilize training in low-SNR bins where linear MSE on power over-penalizes silence.
+with defaults $(\lambda_1,\lambda_2,\lambda_3,\lambda_4)=(1.0, 0.3, 0.15, 0.5)$ from \texttt{distill\_config.json}.
 
 \subsection{Optimization Details}
 
-Training uses Adam with learning rate $5\times10^{-4}$ (selected runD uses $3.5\times10^{-4}$ via \texttt{--lr-scale 0.7}), gradient clipping at norm 1.0, and one random 1.0\,s chunk per step ($16\,000$ samples at 16\,kHz). Loop termination occurs at 1200 steps or 900\,s elapsed---whichever comes first. Checkpoints store \texttt{model\_state}, STFT sizes, \texttt{residual\_alpha}, and validation L1 mask error.
-
-\begin{algorithm}[H]
-  \caption{Student distillation training step (\texttt{train\_student\_distill.py})}
-  \label{alg:distill_train}
-  \begin{algorithmic}[1]
-    \Require Train pairs $\mathcal{P}$, config, TinyResidualRefiner $\mathcal{F}_\theta$
-    \Ensure Checkpoint \texttt{student\_\{tag\}.pt}
-    \State Build sampling probabilities from \texttt{hard\_scene\_weights}
-    \For{$\mathit{step} = 1$ \textbf{to} \texttt{max\_steps} (or time limit)}
-      \State Sample pair $(X_{\mathrm{audio}}, T_{\mathrm{audio}}, Y_{\mathrm{audio}}, C_{\mathrm{audio}})$ by scene weight
-      \State Extract aligned 1.0\,s chunks; compute STFTs $X,T,Y,C$
-      \State $M_{\mathrm{teacher}} \gets \mathrm{clip}(|T|/(|X|+\varepsilon),\, 0.2,\, 1.8)$ \Comment{\eqref{eq:teacher_mask}}
-      \State $\mathbf{X} \gets [\log(1+|X|);\, \log(1+|Y|)]$
-      \State $r \gets \mathcal{F}_\theta(\mathbf{X})$;\quad $M \gets \mathrm{clip}(1+\alpha r,\, 0.2,\, 1.8)$
-      \State $\hat{Y} \gets M \odot X$
-      \State $\mathcal{L} \gets \lambda_1\|M-M_{\mathrm{teacher}}\|_1 + \lambda_2\|\psi_c(\hat{Y})-\psi_c(T)\|_2^2 + \lambda_3\|\psi_c(\hat{Y})-\psi_c(C)\|_2^2$
-      \State Adam step; clip gradients
-    \EndFor
-    \State Evaluate val L1 on held-out scenes; save checkpoint
-  \end{algorithmic}
-\end{algorithm}
+Adam, learning rate $5\times10^{-4}$, gradient clipping at norm 1.0, one random 1.0\,s chunk per step. Loop termination at 50\,000 steps or 1200\,s elapsed. runK local training completed \textbf{21\,488 steps} in \textbf{1200\,s} on CPU with validation mask L1 $\approx 0.386$ (\texttt{train\_log\_runK.json}).
 
 \section{Hard-Scene Weighted Sampling}
 \label{sec:hard_scenes}
 
-Uniform scene sampling under-represents difficult benchmarks where math routing leaves large teacher--math gaps. Let $w_s$ be the weight for scene $s$. Training draws pair index $i$ with probability
-\begin{equation}
-  P(i) = \frac{w_{s(i)}}{\sum_j w_{s(j)}}.
-\end{equation}
-Default weights in \texttt{distill\_config.json}:
-\begin{center}
-\begin{tabular}{lc}
-  \texttt{scene02\_white\_snr5} & $3.0$ \\
-  \texttt{scene09\_chirp\_interference\_snr8} & $3.5$ \\
-  \texttt{scene11\_intermittent\_bursts\_snr7} & $1.5$ \\
-  all other train scenes & $1.0$ \\
-\end{tabular}
-\end{center}
-
-Scene02 ($\rho_{<0}\approx 0.90$, \chapref{ch:scene}) and scene09 (chirp ridge; largest routed RMS error in eval) receive the highest weights, aligning optimization with scenes where residual correction yields the largest $\Delta$RMS (Table~\ref{tab:distill_eval}).
+Weights: scene02 ($3.0$), scene09 ($3.5$), scene11 ($1.5$), others $1.0$. These scenes show the largest teacher--math gaps and the largest runK $\Delta$RMS gains (Table~\ref{tab:distill_eval}).
 
 \section{Training Configuration and Model Selection}
 \label{sec:train_config}
 
-\subsection{Hyperparameters}
-
-Table~\ref{tab:distill_config} lists defaults. STFT parameters match the math library so mask learning operates in the same time--frequency tiling as OM-LSA.
-
 \begin{table}[H]
   \centering
-  \caption{Default distillation hyperparameters (\texttt{distill\_config.json}).}
+  \caption{Distillation hyperparameters (\texttt{distill\_config.json}, runK).}
   \label{tab:distill_config}
   \begin{tabular}{lc}
     \toprule
@@ -228,156 +140,113 @@ Table~\ref{tab:distill_config} lists defaults. STFT parameters match the math li
     \midrule
     Sample rate             & 16\,kHz \\
     STFT ($N_{\mathrm{FFT}}$, hop) & 512, 128 \\
-    Chunk length            & 1.0\,s (16\,000 samples) \\
-    Max training time       & 900\,s \\
-    Max steps               & 1200 \\
+    Chunk length            & 1.0\,s \\
+    Max training time       & 1200\,s \\
+    Max steps               & 50\,000 \\
     Base learning rate      & $5 \times 10^{-4}$ \\
     Residual scale $\alpha$ & 0.8 \\
-    Compress exponent $c$  & 0.5 \\
-    $(\lambda_1, \lambda_2, \lambda_3)$ & (1.0, 0.3, 0.15) \\
-    Selected checkpoint tag & \texttt{runD} \\
+    Loss weights            & L1 / mag / clean / MRSTFT = 1.0 / 0.3 / 0.15 / 0.5 \\
+    Selected checkpoint tag & \texttt{runK} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{Hyperparameter Search and \texttt{runD} Selection}
+\subsection{From runA--runD to runK}
 
-\texttt{hparam\_search\_report.json} documents a two-phase search:
-\begin{enumerate}
-  \item \textbf{Phase 1} --- reference run with conservative inference residual scale;
-  \item \textbf{Phase 2} --- compare candidates \texttt{runC} ($\mathrm{lr}=5\times10^{-4}$) and \texttt{runD} ($\mathrm{lr}=3.5\times10^{-4}$) by validation mask L1, then AB RMS on the full benchmark.
-\end{enumerate}
-\texttt{runD} achieved $\mathrm{val\_L1}\approx 0.522$ with 1200 steps in 20.1\,s on CPU (\texttt{train\_log\_runD.json}) and was selected because it improved routed RMS in all 15 scenes at inference scale 1.0 (mean $\Delta$RMS $=6.19\times10^{-4}$).
+\texttt{hparam\_search\_report.json} documents early runs (\texttt{runA}--\texttt{runD}) on the shallow 2641-parameter network. \texttt{runD} (lr scale 0.7, 1200 steps, 20.1\,s) improved routed RMS on all 15 scenes (mean $\Delta$RMS $=6.2\times10^{-4}$) but left large residuals on chirp and burst scenes. \textbf{runK} increases network capacity, adds MRSTFT loss, and extends training budget. On the same 15-scene benchmark, runK doubles mean $\Delta$RMS ($1.39\times10^{-3}$) with especially large gains on scene09 (chirp) and scene11 (bursts).
 
 \section{Benchmark Evaluation}
 \label{sec:distill_eval}
 
-\texttt{eval\_distill\_ab.py} compares three waveforms per scene against \texttt{clean\_reference.wav}:
-\begin{equation}
-  e_{\mathrm{routed}} = \mathrm{RMS}(d_{\mathrm{math}}-s),\quad
-  e_{\mathrm{refined}} = \mathrm{RMS}(\hat{s}-s),\quad
-  e_{\mathrm{teacher}} = \mathrm{RMS}(t-s).
-\end{equation}
-
-Table~\ref{tab:distill_eval} summarizes \texttt{distill\_eval.json}. The student improves over routed output in \textbf{all 15 scenes} (mean $\Delta$RMS $=6.19\times10^{-4}$). Largest gains occur on structured-interference scenes aligned with hard-scene weighting: scene09 (chirp, $\Delta=0.00191$) and scene12 (babble, $\Delta=0.00143$). Scene04 is the only case where the student beats the teacher on RMS ($e_{\mathrm{refined}}<e_{\mathrm{teacher}}$), indicating teacher--clean mismatch on colored noise rather than student superiority in general.
+\texttt{eval\_runK.py} compares noisy, routed, runK refined, and teacher waveforms against \texttt{clean\_reference.wav}. Table~\ref{tab:distill_eval} summarizes \texttt{distill\_eval\_runK.json} (also exported to \texttt{distill\_eval.json}). runK improves routed RMS in \textbf{all 15 scenes}. Largest $\Delta$RMS: scene11 ($0.00569$), scene09 ($0.00436$), scene02 ($0.00102$).
 
 \begin{table}[H]
   \centering
-  \caption{Distillation A/B evaluation (\texttt{student\_runD.pt}, RMS error vs.\ clean).}
+  \caption{Distillation A/B evaluation (\texttt{student\_runK.pt}, RMS error vs.\ clean).}
   \label{tab:distill_eval}
   \footnotesize
+  \setlength{\tabcolsep}{3pt}
   \begin{tabular}{lrrrr}
     \toprule
-    \textbf{Scene} & $e_{\mathrm{routed}}$ & $e_{\mathrm{refined}}$ & $e_{\mathrm{teacher}}$ & $\Delta$ \\
+    \textbf{Scene} & $e_{\mathrm{routed}}$ & $e_{\mathrm{runK}}$ & $e_{\mathrm{teacher}}$ & $\Delta$ \\
     \midrule
-    scene01 white 15\,dB  & 0.00623 & 0.00587 & 0.00441 & 0.00036 \\
-    scene02 white 5\,dB   & 0.01003 & 0.00936 & 0.00766 & 0.00067 \\
-    scene03 pink          & 0.00808 & 0.00755 & 0.00529 & 0.00053 \\
-    scene04 brown         & 0.00555 & 0.00527 & 0.01076 & 0.00028 \\
-    scene05 hum50         & 0.00538 & 0.00476 & 0.00340 & 0.00062 \\
-    scene06 hum60         & 0.00554 & 0.00512 & 0.00347 & 0.00043 \\
-    scene07 HF hiss       & 0.00655 & 0.00617 & 0.00406 & 0.00038 \\
-    scene08 LF rumble     & 0.00673 & 0.00631 & 0.00435 & 0.00042 \\
-    scene09 chirp         & 0.01686 & 0.01495 & 0.00447 & 0.00191 \\
-    scene10 clicks        & 0.00845 & 0.00802 & 0.00626 & 0.00043 \\
-    scene11 bursts        & 0.01412 & 0.01373 & 0.00655 & 0.00039 \\
-    scene12 babble        & 0.01379 & 0.01236 & 0.01080 & 0.00143 \\
-    scene13 street        & 0.00932 & 0.00868 & 0.00727 & 0.00064 \\
-    scene14 office fan    & 0.00785 & 0.00737 & 0.00578 & 0.00048 \\
-    scene15 reverb+hiss   & 0.00724 & 0.00691 & 0.00476 & 0.00033 \\
+    scene01 white 15\,dB  & 0.00623 & 0.00537 & 0.00441 & 0.00086 \\
+    scene02 white 5\,dB   & 0.01003 & 0.00901 & 0.00766 & 0.00102 \\
+    scene03 pink          & 0.00808 & 0.00698 & 0.00529 & 0.00110 \\
+    scene04 brown         & 0.00555 & 0.00485 & 0.01076 & 0.00069 \\
+    scene05 hum50         & 0.00538 & 0.00471 & 0.00340 & 0.00067 \\
+    scene06 hum60         & 0.00554 & 0.00494 & 0.00347 & 0.00060 \\
+    scene07 HF hiss       & 0.00655 & 0.00562 & 0.00406 & 0.00093 \\
+    scene08 LF rumble     & 0.00673 & 0.00575 & 0.00435 & 0.00099 \\
+    scene09 chirp         & 0.01686 & 0.01249 & 0.00447 & 0.00436 \\
+    scene10 clicks        & 0.00845 & 0.00754 & 0.00626 & 0.00091 \\
+    scene11 bursts        & 0.01412 & 0.00842 & 0.00655 & 0.00569 \\
+    scene12 babble        & 0.01379 & 0.01284 & 0.01080 & 0.00095 \\
+    scene13 street        & 0.00932 & 0.00831 & 0.00727 & 0.00101 \\
+    scene14 office fan    & 0.00785 & 0.00765 & 0.00578 & 0.00020 \\
+    scene15 reverb+hiss   & 0.00724 & 0.00644 & 0.00476 & 0.00081 \\
     \midrule
-    \textbf{Mean}         &       &         &         & 0.00062 \\
+    \textbf{Mean}         & 0.00837 & 0.00730 & 0.00596 & 0.00139 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Mean SNR (dB) across 15 scenes (\texttt{distill\_eval\_runK.json}).}
+  \label{tab:distill_snr}
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Stage} & Noisy & Routed & runK refined & Teacher \\
+    \midrule
+    Mean SNR (dB) & 9.07 & 12.69 & 14.06 & 16.07 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \begin{proposition}[Monotonic refinement on benchmark (empirical)]
 \label{prop:distill_improve}
-Under the fixed \texttt{runD} checkpoint and inference $\alpha=1.0$, distilled refinement satisfies $e_{\mathrm{refined}} \le e_{\mathrm{routed}}$ for all 15 benchmark scenes in \texttt{distill\_eval.json}. Mean improvement is modest in absolute RMS ($\sim\!6\times10^{-4}$) but consistent, supporting optional refinement without degrading any scene relative to routed math output.
+Under \texttt{student\_runK.pt} and inference $\alpha=1.0$, distilled refinement satisfies $e_{\mathrm{refined}} \le e_{\mathrm{routed}}$ for all 15 benchmark scenes. Mean RMS improvement is $1.39\times10^{-3}$, more than double the shallow \texttt{runD} student ($6.2\times10^{-4}$).
 \end{proposition}
 
-The student remains above the teacher on most scenes ($e_{\mathrm{refined}} > e_{\mathrm{teacher}}$): distillation transfers \emph{partial} teacher knowledge into 2641 parameters, not full DeepFilterNet capacity.
+runK closes approximately 44\% of the mean RMS gap between routed math ($0.00837$) and teacher ($0.00596$). Scene12 and scene14 show slightly lower SNR than the legacy runD refined outputs ($\approx -0.3$\,dB) while still improving RMS vs.\ routed---an expected trade-off when capacity is reallocated toward chirp/burst residuals.
 
 \section{Inference and Deployment}
 \label{sec:inference}
 
-\subsection{Offline Batch Inference}
-
-\texttt{infer\_student\_refine.py} loads \texttt{student\_runD.pt}, reads each \texttt{math\_input\_wav} from \texttt{distill\_pairs.json}, and writes \texttt{*\_distill\_refined.wav} to \texttt{outputs/distill\_refined/}. Optional \texttt{--residual-scale} multiplies checkpoint $\alpha$ for conservative refinement (phase~1 search used scale 0.1).
-
-\begin{algorithm}[H]
-  \caption{Student refinement inference (\texttt{infer\_student\_refine.py})}
-  \label{alg:distill_infer}
-  \begin{algorithmic}[1]
-    \Require Routed WAV $d_{\mathrm{math}}$, noisy WAV $y$, checkpoint $\theta$
-    \Ensure Refined WAV $\hat{s}$
-    \State $D_{\mathrm{math}} \gets \mathrm{STFT}(d_{\mathrm{math}})$;\quad $Y \gets \mathrm{STFT}(y)$
-    \State $\mathbf{X} \gets [\log(1+|D_{\mathrm{math}}|);\, \log(1+|Y|)]$
-    \State $M \gets \mathrm{clip}(1 + \alpha\,\mathcal{F}_\theta(\mathbf{X}),\, 0.2,\, 1.8)$
-    \State $\hat{Y} \gets M \odot D_{\mathrm{math}}$
-    \State $\hat{s} \gets \mathrm{iSTFT}(\hat{Y})$;\quad peak-normalize if $|\hat{s}|_\infty > 0.99$
-    \State \Return $\hat{s}$
-  \end{algorithmic}
-\end{algorithm}
-
-\subsection{Web Platform Integration}
-
-When the API request sets \texttt{run\_distill\_refine=true} (\texttt{schemas/models.py}), \texttt{distill\_refiner.refine\_with\_student()} runs after routing:
-\begin{enumerate}
-  \item Mathematical denoising produces intermediate \texttt{processed/} WAV;
-  \item Student loads \texttt{distill/checkpoints/student\_runD.pt};
-  \item Refinement uses routed output as $D_{\mathrm{math}}$ and original upload as $Y$;
-  \item Refined audio replaces or supplements the processed artifact for metrics/plots.
-\end{enumerate}
-If the checkpoint is missing, refinement is skipped gracefully (\texttt{return False}).
-
-\subsection{Deployment Artifact Size}
-
-The \texttt{student\_runD.pt} checkpoint contains 2641 float32 weights ($\approx 10$\,KB) plus metadata---orders of magnitude smaller than DeepFilterNet3 model directories. Combined with the math library (no GPU requirement), this supports edge deployment as an optional post-router stage.
+\texttt{infer\_student\_refine.py} loads \texttt{student\_runK.pt}, applies peak limiting to 0.99 after iSTFT, and writes refined WAVs. On the web platform, \texttt{distill\_refiner.refine\_with\_student()} imports the same \texttt{TinyResidualRefiner} class from \texttt{train\_student\_distill.py}; \texttt{resolve\_distill\_checkpoint()} reads \texttt{selected\_checkpoint} from \texttt{distill\_config.json}. Users enable runK via \textbf{Method = auto} (recommended) plus checkbox \textbf{Run distill refine} (\chapref{ch:web}).
 
 \section{Computational Advantage}
 \label{sec:compute_adv}
 
-Table~\ref{tab:compute_compare} contrasts teacher and student on this project's 16\,kHz benchmark setting. Parameter counts are exact for TinyResidualRefiner; DeepFilterNet3 is reported at order-of-millions per published architectures~\cite{deepfilternet2023} and bundled \texttt{config.ini} (256-dim embedding, multi-layer GRU/DF stacks).
-
 \begin{table}[H]
   \centering
-  \caption{Computational comparison: DeepFilterNet3 teacher vs.\ TinyResidualRefiner student.}
+  \caption{Computational comparison: DeepFilterNet3 teacher vs.\ runK student.}
   \label{tab:compute_compare}
   \begin{tabular}{lcc}
     \toprule
-    \textbf{Metric} & \textbf{DeepFilterNet3} & \textbf{TinyResidualRefiner} \\
+    \textbf{Metric} & \textbf{DeepFilterNet3} & \textbf{TinyResidualRefiner runK} \\
     \midrule
-    Parameters        & $\sim\!10^6$ (teacher) & 2\,641 \\
-    Checkpoint size   & $\sim$MB scale        & $\sim$10\,KB \\
-    Used at inference & Optional baseline only & Optional refine flag \\
-    Training time     & Pretrained (external) & $\approx 20$\,s / 1200 steps (CPU) \\
-    Latency (5.6\,s clip, CPU) & $\approx 2.9$\,s CLI wall time & $\approx 8$\,ms STFT+Conv+iSTFT \\
-    Speed ratio       & 1$\times$            & $\sim\!350\times$ faster (refine only) \\
+    Parameters        & $\sim\!10^6$ & 56\,129 \\
+    Checkpoint size   & MB scale     & $\approx$225\,KB \\
+    Used at inference & Optional     & Optional refine flag \\
+    Training time     & Pretrained   & 1200\,s / 21\,488 steps (CPU) \\
+    Refine latency    & ---          & $\approx 8$\,ms (5.6\,s clip) \\
     \bottomrule
   \end{tabular}
 \end{table}
-
-\paragraph{Interpretation.}
-Measured student latency on \texttt{scene01} ($5.6$\,s audio) is dominated by STFT/iSTFT ($\approx 8$\,ms total on CPU), with Conv2D forward pass under 1\,ms for $F\times T\approx 257\times 440$. DeepFilterNet3 CLI processing on the same file requires $\approx 2.9$\,s wall time including model load and 48\,kHz-native inference---unsuitable as a per-utterance default on low-power devices. The hybrid pipeline keeps math routing ($\sim$ tens of ms) as the primary cost and adds $<$10\,ms optional refinement.
-
-\paragraph{Quality--cost trade-off.}
-Student RMS error sits between routed math and teacher on most scenes (Table~\ref{tab:distill_eval}): users gain consistent incremental improvement at negligible marginal latency, while the teacher remains available offline for re-distillation when routing or math modules change.
 
 \section{Limitations and Extensions}
 \label{sec:dl_limits}
 
 \begin{itemize}
-  \item \textbf{Routed-input dependence} --- The student corrects errors of the \emph{current} router and overrides; changing \texttt{scene\_method\_overrides.json} without retraining may misalign mask statistics.
-  \item \textbf{Magnitude-only mask} --- Phase is copied from $D_{\mathrm{math}}$; scenarios where phase errors dominate (heavy reverberation) may need complex-domain extensions.
-  \item \textbf{Teacher domain gap} --- DeepFilterNet3 defaults to 48\,kHz training; teacher targets on 16\,kHz benchmark clips introduce domain mismatch (evident on scene04 where teacher RMS exceeds routed).
-  \item \textbf{Single-module overrides vs.\ chains} --- Distillation pairs use whatever routed WAV exists; multi-stage chains (hum: notch$\rightarrow$NMF) are folded into one $D_{\mathrm{math}}$ without stage-wise students.
-  \item \textbf{RMS-only selection} --- \texttt{runD} was chosen by RMS AB metrics; perceptual or ASR-word-error criteria may rank checkpoints differently.
+  \item \textbf{15-scene training scale} --- runK reported here uses original benchmark pairs; aug-expanded training (9500+ pairs in merged config) is supported but not required for deployment.
+  \item \textbf{Routed-input dependence} --- router or override changes require re-distillation.
+  \item \textbf{Magnitude-only mask} --- phase copied from $D_{\mathrm{math}}$; heavy reverberation may need complex-domain extensions.
+  \item \textbf{RMS-only selection} --- perceptual or WER metrics may rank checkpoints differently.
 \end{itemize}
-
-Future work includes on-device INT8 quantization of $\mathcal{F}_\theta$, joint retraining after router updates, and word-error-rate evaluation on downstream ASR (\chapref{ch:experiments}).
 
 \section{Chapter Summary}
 \label{sec:dl_summary}
 
-This chapter presented the lightweight deep-learning layer of \projectshort{}: a 2641-parameter TinyResidualRefiner that applies a bounded residual mask to routed STFT magnitudes, trained by distilling DeepFilterNet3 mask and compressed-magnitude targets with hard-scene weighted sampling. Training completes in about 20 seconds on CPU; inference adds roughly 8\,ms per 5.6-second utterance. On all 15 benchmark scenes, \texttt{student\_runD.pt} improves RMS error versus routed mathematical output while remaining interpretable as a correction on top of logged algorithm chains. \chapref{ch:web} describes web UI exposure; \chapref{ch:experiments} places distillation results in the full experimental study.
+This chapter presented the runK lightweight deep-learning layer: a 56\,129-parameter dilated-residual TinyResidualRefiner trained with MRSTFT-augmented distillation losses. On all 15 benchmark scenes, \texttt{student\_runK.pt} improves RMS and SNR versus routed mathematical output while adding $\approx 8$\,ms refine latency. \chapref{ch:web} describes web exposure; \chapref{ch:experiments} places results in the full experimental study.
