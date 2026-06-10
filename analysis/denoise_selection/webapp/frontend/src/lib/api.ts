@@ -66,3 +66,31 @@ export function audioUrl(taskId: string, kind: "original" | "denoised" | "residu
   return `${api.defaults.baseURL}/api/result/${taskId}/audio/${kind}`;
 }
 
+export async function createRecordSession(): Promise<{ session_id: string; sample_rate: number }> {
+  const { data } = await api.post<{ ok: boolean; session_id: string; sample_rate: number }>("/api/record/session");
+  return { session_id: data.session_id, sample_rate: data.sample_rate };
+}
+
+export function recordStreamUrl(sessionId: string): string {
+  const base = api.defaults.baseURL ?? "http://127.0.0.1:8000";
+  const wsBase = base.replace(/^http/, "ws");
+  return `${wsBase}/api/record/${sessionId}/stream`;
+}
+
+export async function finishRecordSession(sessionId: string): Promise<{ duration_sec: number }> {
+  const { data } = await api.post<{ ok: boolean; duration_sec: number }>(`/api/record/${sessionId}/finish`);
+  return { duration_sec: data.duration_sec };
+}
+
+export async function commitRecordSession(
+  sessionId: string,
+  req: Omit<ProcessRequest, "task_id">,
+): Promise<{ task_id: string; status: string }> {
+  const { data } = await api.post<{ task_id: string; status: string }>(`/api/record/${sessionId}/commit`, req);
+  return { task_id: data.task_id, status: data.status };
+}
+
+export function recordAudioUrl(sessionId: string, kind: "raw" | "preview"): string {
+  return `${api.defaults.baseURL}/api/record/${sessionId}/audio/${kind}`;
+}
+

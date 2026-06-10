@@ -30,6 +30,9 @@ export default function HomePage() {
         </h1>
         <p className="console-lede">{t("homeHeroSubtitle")}</p>
         <div className="console-actions">
+          <Link to="/record" className="console-cta-ghost">
+            {t("homeLiveCapture")}
+          </Link>
           <Link to="/upload" className="console-cta-primary">
             {t("homeStart")}
             <svg viewBox="0 0 1024 1024" aria-hidden="true">

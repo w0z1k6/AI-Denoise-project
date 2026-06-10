@@ -45,3 +45,18 @@ class BookmarkRequest(BaseModel):
     time_sec: float
     note: str
 
+
+class RecordChunkRequest(BaseModel):
+    seq: int
+    pcm_b64: str
+    finalize: bool = False
+    preview_method: str = "omlsa_preview"
+    preview_strength: float = 0.8
+
+
+class RecordCommitRequest(BaseModel):
+    method: str = Field(default="auto")
+    run_distill_refine: bool = Field(default=False)
+    deepfilter_model_dir: str | None = None
+    noisereduce_strength: float = 0.8
+

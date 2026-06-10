@@ -11,6 +11,7 @@ type Props = {
 const navPaths = [
   { to: "/", key: "navHome" as const, end: true },
   { to: "/upload", key: "navUpload" as const, end: false },
+  { to: "/record", key: "navRecord" as const, end: false },
   { to: "/progress", key: "navProgress" as const, end: false },
   { to: "/overview", key: "navOverview" as const, end: false },
   { to: "/charts", key: "navCharts" as const, end: false },

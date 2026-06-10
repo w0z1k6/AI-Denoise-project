@@ -10,6 +10,7 @@ from app.routers.abx import router as abx_router
 from app.routers.process import router as process_router
 from app.routers.result import router as result_router
 from app.routers.task import router as task_router
+from app.routers.record import router as record_router
 from app.routers.upload import router as upload_router
 
 setup_logging()
@@ -28,6 +29,7 @@ app.include_router(process_router)
 app.include_router(task_router)
 app.include_router(result_router)
 app.include_router(abx_router)
+app.include_router(record_router)
 
 
 @app.get("/health")

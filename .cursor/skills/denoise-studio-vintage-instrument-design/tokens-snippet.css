@@ -1,0 +1,57 @@
+/**
+ * Vintage instrument tokens — copy into tokens.css or scope under .vintage-instrument
+ * See skill: denoise-studio-vintage-instrument-design
+ */
+
+.vintage-instrument,
+[data-vintage="on"] {
+  /* Chassis — warm ivory ABS / bakelite-adjacent */
+  --vint-chassis: #e8e4da;
+  --vint-chassis-mid: #ddd8cb;
+  --vint-chassis-shadow: #b8b0a0;
+  --vint-chassis-highlight: #f5f2ea;
+
+  /* Bezel ring around CRT cutout */
+  --vint-bezel: #c4bdb0;
+  --vint-bezel-inner: #8a8378;
+
+  /* CRT cavity */
+  --vint-crt-bg: #0a120c;
+  --vint-crt-vignette: rgba(0, 0, 0, 0.45);
+
+  /* P31-style phosphor (not neon #00ff00) */
+  --vint-phosphor: #3dff7a;
+  --vint-phosphor-mid: #2bcc62;
+  --vint-phosphor-dim: rgba(61, 255, 122, 0.2);
+  --vint-phosphor-grid: rgba(61, 255, 122, 0.14);
+  --vint-phosphor-glow: rgba(61, 255, 122, 0.5);
+  --vint-phosphor-bloom: rgba(120, 255, 160, 0.35);
+
+  /* Silkscreen labels */
+  --vint-silk: #6a6558;
+  --vint-silk-light: #9a9488;
+
+  /* Pilot lamps */
+  --vint-pilot-red: #e23b2f;
+  --vint-pilot-red-glow: rgba(226, 59, 47, 0.65);
+  --vint-pilot-amber: #d4920a;
+
+  /* Mechanical depth */
+  --vint-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 0 24px rgba(0, 0, 0, 0.2);
+  --vint-inset-crt: inset 0 0 32px var(--vint-crt-vignette), inset 0 2px 12px rgba(0, 0, 0, 0.5);
+  --vint-raised: 0 2px 0 var(--vint-chassis-highlight), 0 4px 12px rgba(60, 50, 40, 0.15);
+}
+
+[data-theme="dark"] .vintage-instrument,
+[data-theme="dark"][data-vintage="on"] {
+  /* Dark theme: chassis slightly cooler; phosphor brighter */
+  --vint-chassis: #2a2824;
+  --vint-chassis-mid: #1f1e1a;
+  --vint-chassis-shadow: #0f0e0c;
+  --vint-chassis-highlight: #3a3832;
+  --vint-bezel: #3d3a34;
+  --vint-bezel-inner: #1a1916;
+  --vint-phosphor: #4aff88;
+  --vint-phosphor-glow: rgba(74, 255, 136, 0.55);
+  --vint-silk: #8a8578;
+}

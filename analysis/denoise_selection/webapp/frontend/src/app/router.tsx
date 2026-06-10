@@ -10,6 +10,7 @@ import PipelineTheaterPage from "../pages/showcase/PipelineTheaterPage";
 import ShowcaseHubPage from "../pages/showcase/ShowcaseHubPage";
 import SignalMonitorPage from "../pages/showcase/SignalMonitorPage";
 import TaskProgressPage from "../pages/TaskProgressPage";
+import LiveCapturePage from "../pages/LiveCapturePage";
 import UploadConfigPage from "../pages/UploadConfigPage";
 
 type Props = {
@@ -22,6 +23,7 @@ export function AppRoutes({ taskId, setTaskId }: Props): ReactElement {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/upload" element={<UploadConfigPage setTaskId={setTaskId} />} />
+      <Route path="/record" element={<LiveCapturePage setTaskId={setTaskId} />} />
       <Route path="/progress" element={<TaskProgressPage taskId={taskId} />} />
       <Route path="/overview" element={<ResultOverviewPage taskId={taskId} />} />
       <Route path="/charts" element={<ChartCenterPage taskId={taskId} />} />
